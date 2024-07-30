@@ -60,7 +60,6 @@ async def confirm_details(msg: Message, name: str = None):
     except ValueError:
         await msg.reply("Please send a valid age!")
         await register_next_step(msg.from_user.id, confirm_details, kwargs={"name": name})
-        return
-
-    await msg.reply(f"Your name is {name} and you are {age} years old. Thank you!")
+    else:
+        await msg.reply(f"Your name is {name} and you are {age} years old. Thank you!")
 ```
