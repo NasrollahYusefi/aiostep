@@ -18,7 +18,7 @@ pip install -U aiostep
 
 # Quick Start
 ### Middleware Integration
-To use aiostep, add the Listen middleware to your dispatcher:
+1. To use aiostep, add the Listen middleware to your dispatcher:
 ```python
 from aiogram import Dispatcher
 from aiostep import Listen
