@@ -4,11 +4,11 @@ aiostep is a powerful extension library for aiogram, designed to simplify and en
 
 # Key Features
 1. Direct User Interactions
-  - aiostep allows you to easily implement direct question-answer flows in your bot without complex handler chains. You can wait for a user's response within a single function, making your code more readable and maintainable.
+    - aiostep allows you to easily implement direct question-answer flows in your bot without complex handler chains. You can wait for a user's response within a single function, making your code more readable and maintainable.
 2. Simplified Next Step Registration
-  - With aiostep, you can effortlessly manage conversation flows by registering next steps. This feature allows you to create complex, multi-step interactions without cluttering your main handler functions.
+    - With aiostep, you can effortlessly manage conversation flows by registering next steps. This feature allows you to create complex, multi-step interactions without cluttering your main handler functions.
 3. Seamless Integration with aiogram
-  - aiostep is designed to work harmoniously with aiogram. It enhances aiogram's capabilities without replacing its core functionality.
+    - aiostep is designed to work harmoniously with aiogram. It enhances aiogram's capabilities without replacing its core functionality.
 
 # Installation
 To use aiostep in your project, simply install it with the following command:
