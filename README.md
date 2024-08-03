@@ -1,3 +1,5 @@
+[![Github All Releases](https://img.shields.io/github/downloads/NasrollahYusefi/aiostep/total.svg)]()
+
 # aiostep
 
 aiostep is a powerful extension library for aiogram, designed to simplify and enhance the process of building Telegram bots in Python. It introduces intuitive methods for direct user interactions and streamlined conversation flow management.
