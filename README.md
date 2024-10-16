@@ -1,4 +1,4 @@
-[![Github All Releases](https://img.shields.io/github/downloads/NasrollahYusefi/aiostep/total.svg)]()
+![image](https://static.pepy.tech/badge/aiostep)
 
 # aiostep
 
