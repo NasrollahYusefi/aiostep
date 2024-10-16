@@ -1,4 +1,9 @@
-![image](https://static.pepy.tech/badge/aiostep)
+![PyPI Version](https://img.shields.io/pypi/v/aiostep)
+![Python Version](https://img.shields.io/pypi/pyversions/aiostep)
+![License](https://img.shields.io/pypi/l/aiostep)
+![Stable Release](https://img.shields.io/pypi/status/aiostep)
+![Total Downloads](https://static.pepy.tech/badge/aiostep)
+![Downloads](https://img.shields.io/pypi/dm/aiostep)
 
 # aiostep
 
