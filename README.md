@@ -6,16 +6,6 @@
 
 # aiostep
 
-<<<<<<< HEAD
-aiostep is a powerful extension library for aiogram, designed to simplify and enhance the process of building Telegram bots in Python. It introduces intuitive methods for direct user interactions and streamlined conversation flow management.
-
-# Key Features
-- **Direct Question Handling:** Allows the bot to ask users questions and wait for their responses directly within a handler.
-- **Next Step Registration:** Enables the registration of subsequent steps to handle user responses in a sequence.
-
-# Installation
-To use aiostep in your project, simply install it with the following command:
-=======
 **aiostep** is an extension library for [aiogram](https://github.com/aiogram/aiogram), designed to streamline building Telegram bots in Python. It simplifies user interactions by providing intuitive methods for handling conversations and state management.
 
 ---
@@ -32,16 +22,10 @@ To use aiostep in your project, simply install it with the following command:
 
 To install the latest version of `aiostep`, run:
 
->>>>>>> a5e8ce7da2db08c37f1ba32f226cc5cd5335befa
 ```bash
 pip install -U aiostep
 ```
 
-<<<<<<< HEAD
-# Quick Start
-### Middleware Integration
-1. To use aiostep, add the Listen middleware to your dispatcher:
-=======
 ---
 
 ## Quick Start
@@ -50,7 +34,6 @@ pip install -U aiostep
 
 To use `aiostep`, add the `Listen` middleware to your `Dispatcher` instance:
 
->>>>>>> a5e8ce7da2db08c37f1ba32f226cc5cd5335befa
 ```python
 from aiogram import Dispatcher
 from aiostep import Listen
@@ -58,15 +41,11 @@ from aiostep import Listen
 dp = Dispatcher()
 dp.message.outer_middleware(Listen())
 ```
-<<<<<<< HEAD
-2. Use wait_for to directly interact with users:
-=======
 
 ### 2. Direct Interaction Using `wait_for`
 
 With `aiostep`, you can wait for a user's response directly within a handler using the `wait_for` function:
 
->>>>>>> a5e8ce7da2db08c37f1ba32f226cc5cd5335befa
 ```python
 import aiostep
 
@@ -74,15 +53,6 @@ import aiostep
 async def echo_handler(message: Message):
     await message.reply("Please type something:")
     try:
-<<<<<<< HEAD
-        response = await aiostep.wait_for(message.from_user.id, timeout=25)
-    except TimeoutError:
-        await message.reply('You took too long to answer.')
-    else:
-        await message.reply(f"You typed: {response.text}")
-```
-3. Use register_next_step for complex conversation flows:
-=======
         response = await aiostep.wait_for(message.from_user.id, timeout=25)  # timeout is optional
     except TimeoutError:
         await message.reply("You took too long to answer.")
@@ -96,7 +66,6 @@ async def echo_handler(message: Message):
 
 Easily manage multi-step conversation flows where the user's next input is handled by a different function:
 
->>>>>>> a5e8ce7da2db08c37f1ba32f226cc5cd5335befa
 ```python
 import aiostep
 
@@ -110,17 +79,6 @@ async def ask_age(msg: Message):
     await msg.reply("How old are you?")
     await aiostep.register_next_step(msg.from_user.id, confirm_details, kwargs={"name": user_name})
 
-<<<<<<< HEAD
-async def confirm_details(msg: Message, name: str = None):
-    try:
-        age = int(msg.text)
-    except ValueError:
-        await msg.reply("Please send a valid age!")
-        await register_next_step(msg.from_user.id, confirm_details, kwargs={"name": name})
-    else:
-        await msg.reply(f"Your name is {name} and you are {age} years old. Thank you!")
-```
-=======
 async def confirm_details(msg: Message, name: str):
     try:
         age = int(msg.text)
@@ -223,4 +181,3 @@ By leveraging `aiostep`, you can significantly reduce complexity when building a
 For any contributions, issues, or feedback, feel free to check out the repository and open a discussion or pull request!
 
 ---
->>>>>>> a5e8ce7da2db08c37f1ba32f226cc5cd5335befa
