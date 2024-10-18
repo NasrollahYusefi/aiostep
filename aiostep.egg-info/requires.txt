@@ -1,0 +1,4 @@
+cachebox>=4.2.3
+
+[redis]
+redis>=5.1.1
