@@ -1,1 +1,1 @@
-cachebox
+cachebox>=4.2.3
