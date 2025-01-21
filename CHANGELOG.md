@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.0] - 2024-01-21
+## [0.3.0] - 2024-01-21
 
 ### Added
 - New `FileStateStorage` class for storing states in files
