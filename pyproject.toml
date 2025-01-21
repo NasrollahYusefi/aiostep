@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "aiostep"
+version = "0.3.0"
+description = "A Python library to handle steps in aiogram framework."
+author = [
+    { name = "Nasrollah Yusefi" }
+]
+license = "MIT"
+readme = "README.md"
+keywords = ["aiogram", "steps", "states", "Telegram bot", "asynchronous", "aiostep"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+cachebox = "^4.2.3"
+qsave = "^1.1.1"
+msgspec = "^0.19.0"
+redis = { version = "^5.1.1", optional = true }
+
+[tool.poetry.extras]
+redis = ["redis"]
+
+[tool.poetry.urls]
+Homepage = "https://github.com/NasrollahYusefi/aiostep"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

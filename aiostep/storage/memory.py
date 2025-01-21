@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Callable
+from typing import Callable, Any, Union, Optional, Dict
 from copy import deepcopy
-from cachebox import BaseCacheImpl
+from cachebox import BaseCacheImpl, Cache
 
 from .base import BaseStorage, StateContext
 
@@ -18,15 +18,43 @@ class MemoryStateStorage(BaseStorage):
             an empty dictionary will be used.
     """
 
-    def __init__(self, cache: BaseCacheImpl | dict | None = None) -> None:
+    def __init__(self, cache: Optional[Union[BaseCacheImpl, dict]] = None) -> None:
         """Initialize the memory storage.
 
         Args:
             cache (dict | None, optional): Initial cache dictionary. Defaults to None.
         """
-        self.cache = cache if cache is not None else {}
+        self.cache = cache if cache is not None else Cache(0)
+
+    def _get_key(self, user_id: Union[int, str]) -> str:
+        """Generate Cache key for a user.
+
+        Args:
+            user_id (int | str): ID of the user
+
+        Returns:
+            str: Cache key
+        """
+        return f"state:{user_id}"
+
+    def _get_data_key(self, user_id: Union[int, str]) -> str:
+        """Generate Cache key for a user.
+
+        Args:
+            user_id (int | str): ID of the user
+
+        Returns:
+            str: Cache key
+        """
+        return f"data:{user_id}"
     
-    async def set_state(self, user_id: int, state: str | Enum, callback: Callable | None = None, chat_id: int | str = None) -> None:
+    def set_state(
+        self,
+        user_id: Union[int, str],
+        state: Union[str, Enum],
+        callback: Optional[Callable[..., Any]] = None,
+        chat_id: Optional[Union[int, str]] = None
+    ) -> None:
         """Set the state for a user.
 
         Args:
@@ -37,13 +65,16 @@ class MemoryStateStorage(BaseStorage):
         """
         if chat_id is None:
             chat_id = user_id
-        self.cache[user_id] = StateContext(
+
+        state_key = self._get_key(user_id)
+
+        self.cache[state_key] = StateContext(
             current_state=state,
             callback=callback,
             chat_id=chat_id
         )
-    
-    async def get_state(self, user_id: int, default: str | None = None) -> StateContext:
+
+    def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
@@ -54,9 +85,10 @@ class MemoryStateStorage(BaseStorage):
         Returns:
             StateContext | None: The state context or default value
         """
-        return self.cache.get(user_id, default)
-    
-    async def delete_state(self, user_id: int, default: str | None = None) -> StateContext:
+        state_key = self._get_key(user_id)
+        return self.cache.get(state_key, default)
+
+    def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
@@ -67,10 +99,11 @@ class MemoryStateStorage(BaseStorage):
         Returns:
             StateContext | None: The deleted state context or default value
         """
-        return self.cache.pop(user_id, default)
-    
-    async def set_data(self, user_id: int, data: dict[str, object]) -> None:
-        """Set data for a user's state.
+        state_key = self._get_key(user_id)
+        return self.cache.pop(state_key, default)
+
+    def set_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+        """Set data for a user.
 
         This method completely replaces any existing data.
 
@@ -78,14 +111,15 @@ class MemoryStateStorage(BaseStorage):
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to store
         """
-        state_context = self.cache.get(user_id)
-        if state_context is None:
-            state_context = StateContext()
-            self.cache[user_id] = state_context
-        state_context.data = deepcopy(data)
-    
-    async def get_data(self, user_id: int) -> dict[str, object] | None:
-        """Get data for a user's state.
+        if not isinstance(data, dict):
+            raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_key = self._get_data_key(user_id)
+
+        self.data_cache[data_key] = deepcopy(data)
+
+    def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
+        """Get data for a user.
 
         Args:
             user_id (int | str): ID of the user
@@ -93,11 +127,13 @@ class MemoryStateStorage(BaseStorage):
         Returns:
             dict[str, Any] | None: The stored data or None if not found
         """
-        state_context = self.cache.get(user_id)
-        return deepcopy(state_context.data) if state_context else None
-    
-    async def update_data(self, user_id: int, data: dict[str, object]) -> None:
-        """Update data for a user's state.
+        data_key = self._get_data_key(user_id)
+
+        data_context = self.data_cache.get(data_key)
+        return deepcopy(data_context) if data_context else None
+
+    def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+        """Update data for a user.
 
         This method updates existing data with new values, similar to dict.update().
         Existing keys will be updated, and new keys will be added.
@@ -111,22 +147,22 @@ class MemoryStateStorage(BaseStorage):
             >>> await storage.update_data(user_id, {"age": 25})
             >>> # Result: {"name": "John", "age": 25}
         """
-        state_context = self.cache.get(user_id)
-        if state_context is None:
-            state_context = StateContext()
-            self.cache[user_id] = state_context
-        
-        if state_context.data is None:
-            state_context.data = {}
-        
-        state_context.data.update(deepcopy(data))
-    
-    async def clear_data(self, user_id: int) -> None:
-        """Clear all data for a user's state.
+        if not isinstance(data, dict):
+            raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_key = self._get_data_key(user_id)
+
+        data_context: dict = self.data_cache.get(data_key)
+        if data_context is None:
+            self.data_cache[data_key] = deepcopy(data)
+        else:
+            data_context.update(deepcopy(data))
+
+    def clear_data(self, user_id: Union[int, str]) -> None:
+        """Clear all data for a user.
 
         Args:
             user_id (int | str): ID of the user
         """
-        state_context = self.cache.get(user_id)
-        if state_context:
-            state_context.data = None
+        data_key = self._get_data_key(user_id)
+        self.data_cache.pop(data_key)

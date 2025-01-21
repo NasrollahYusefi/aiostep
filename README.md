@@ -130,13 +130,34 @@ from cachebox import TTLCache
 storage = MemoryStateStorage(TTLCache(1000, 86400))
 
 # Set a state
-await storage.set_state(user_id=12345, state="awaiting_input")
+storage.set_state(user_id=12345, state="awaiting_input")
 
 # Retrieve the state
-state_context = await storage.get_state(user_id=12345)
+state_context = storage.get_state(user_id=12345)
 print(state_context.current_state)
 
 # Delete the state
+storage.delete_state(user_id=12345)
+```
+
+### Example Usage with Redis-Based Storage
+
+To store and manage states in Redis, you need to initialize `RedisStateStorage` and integrate it with your bot:
+
+```python
+from aiostep.storage import FileStateStorage
+
+# File can be .json or anything else
+storage = FileStateStorage("path/to/file.json")
+
+# Setting a state for a user
+await storage.set_state(user_id=12345, state="awaiting_input")
+
+# Getting the current state for a user
+state_context = await storage.get_state(user_id=12345)
+print(state_context.current_state)
+
+# Deleting the current state for a user
 await storage.delete_state(user_id=12345)
 ```
 
