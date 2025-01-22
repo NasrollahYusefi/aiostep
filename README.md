@@ -4,190 +4,197 @@
 ![Total Downloads](https://static.pepy.tech/badge/aiostep)
 ![Downloads](https://img.shields.io/pypi/dm/aiostep)
 
-# aiostep
+# AIOStep - Simple and Flexible State Management
 
-**aiostep** is an extension library for [aiogram](https://github.com/aiogram/aiogram), designed to streamline building Telegram bots in Python. It simplifies user interactions by providing intuitive methods for handling conversations and state management.
+AIOStep is a lightweight and flexible state management tool designed for Telegram bots and similar applications. It allows developers to track user states and manage transitions between them with ease. Whether you're building a multi-step form, handling complex user interactions, or simply need to store temporary user data, AIOStep makes it straightforward.
 
 ---
 
-## Key Features
+## Features
 
+- **Simple API**: Intuitive methods for setting, getting, and deleting user states and associated data.
+- **Customizable Storage**: Use in-memory storage or integrate with persistent options like Redis or file-based storage.
 - **Direct User Interaction**: Easily ask questions and receive user responses directly within handlers, reducing boilerplate code.
-- **Step-Based Flow**: Seamlessly manage multi-step conversation flows with support for dynamic callbacks.
-- **State Management**: Built-in state management with support for both in-memory and Redis-based storage options.
+- **Extendable**: Designed to integrate with existing frameworks such as aiogram.
+
+---
+
+## How It Works
+
+### User Interaction Methods
+
+AIOStep provides three primary methods for interacting with users and managing multi-step processes:
+
+1. **`wait_for`**:
+   - Use this method to wait for a specific user response within the current handler.
+   - Simplifies user interaction by reducing the need for separate handlers.
+
+2. **`register_next_step`**:
+   - Allows registering the next handler explicitly for a user.
+   - Useful for chaining steps in a process.
+
+3. **States**:
+   - Define user states to manage stages in a multi-step workflow.
+   - States can include optional callbacks for seamless navigation between steps.
 
 ---
 
 ## Installation
 
-To install the latest version of `aiostep`, run:
+To start using AIOStep, simply include the relevant files in your project or install via pip if packaged.
 
 ```bash
-pip install -U aiostep
+pip install --upgrade aiostep
+```
+
+If you want use `RedisStateStorage`, you should install aiostep with redis support:
+```bash
+pip install --upgrade aiostep[redis]
 ```
 
 ---
 
-## Quick Start
+## Usage
 
-### 1. Middleware Integration
+### Using `wait_for` and `register_next_step`
+**AIOStep offers two primary methods for managing direct user interactions:**
 
-To use `aiostep`, add the `Listen` middleware to your `Dispatcher` instance:
+#### 1. `wait_for`:
+- This method allows you to wait for a user response directly within the current handler.
+- Requires the `Listen` middleware to be set up for intercepting subsequent user messages.
 
+**Example:**
 ```python
+from aiostep import Listen, wait_for
 from aiogram import Dispatcher
-from aiostep import Listen
 
 dp = Dispatcher()
 dp.message.outer_middleware(Listen())
-```
 
-### 2. Direct Interaction Using `wait_for`
-
-With `aiostep`, you can wait for a user's response directly within a handler using the `wait_for` function:
-
-```python
-import aiostep
-
-@dp.message(filters.Command("echo"))
-async def echo_handler(message: Message):
+@dp.message_handler(commands=["start"])
+async def ask_question(message: Message):
     await message.reply("Please type something:")
     try:
-        response = await aiostep.wait_for(message.from_user.id, timeout=25)  # timeout is optional
+        response = await wait_for(message.from_user.id, timeout=25)  # timeout is optional
     except TimeoutError:
         await message.reply("You took too long to answer.")
     else:
         await message.reply(f"You typed: {response.text}")
 ```
+> [!NOTE]\
+> The `timeout` parameter is optional; if not provided, the bot will wait indefinitely for a response.
 
-**Note**: The `timeout` parameter is optional; if not provided, the bot will wait indefinitely for a response.
+#### 2. `register_next_step`
+- Use this method to explicitly register the next handler for the user's response.
+- Also requires the `Listen` middleware for processing follow-up messages.
 
-### 3. Managing Multi-Step Flows with `register_next_step`
-
-Easily manage multi-step conversation flows where the user's next input is handled by a different function:
-
-```python
-import aiostep
-
-@dp.message(filters.CommandStart())
-async def start(message: Message):
-    await message.reply("What is your name?")
-    await aiostep.register_next_step(message.from_user.id, ask_age)
-
-async def ask_age(msg: Message):
-    user_name = msg.text
-    await msg.reply("How old are you?")
-    await aiostep.register_next_step(msg.from_user.id, confirm_details, kwargs={"name": user_name})
-
-async def confirm_details(msg: Message, name: str):
-    try:
-        age = int(msg.text)
-    except ValueError:
-        await msg.reply("Please provide a valid age!")
-        await aiostep.register_next_step(msg.from_user.id, confirm_details, kwargs={"name": name})
-    else:
-        await msg.reply(f"Your name is {name} and you're {age} years old. Thanks!")
-```
-
-Again, the `timeout` parameter can be passed to `register_next_step` as an option to limit how long to wait for a user's response.
-
----
-
-## State Management
-
-A key feature of `aiostep` is state management, which allows you to store and retrieve user-specific data across sessions. You can choose between **in-memory** storage (ideal for quick setups) or **Redis** for distributed environments.
-
-### Example Usage with Redis-Based Storage
-
-To store and manage states in Redis, you need to initialize `RedisStateStorage` and integrate it with your bot:
+**Example:**
 
 ```python
-from redis.asyncio import Redis
-from aiostep.storage import RedisStateStorage
+@dp.message_handler(commands=["start"])
+async def ask_question(message: Message):
+    await aiostep.register_next_step(message.chat.id, handle_answer)
+    await message.reply("What's your name?")
 
-redis_instance = Redis()
-storage = RedisStateStorage(redis_instance)
-
-# Setting a state for a user
-await storage.set_state(user_id=12345, state="awaiting_input")
-
-# Getting the current state for a user
-state_context = await storage.get_state(user_id=12345)
-print(state_context.current_state)
-
-# Deleting the current state for a user
-await storage.delete_state(user_id=12345)
+async def handle_answer(message: Message):
+    await message.reply(f"Hello, {message.text}!")
 ```
 
-### Example with In-Memory State Storage
+### Using States
+**AIOStep supports managing user states to handle multi-step workflows. Unlike the previous methods, managing states does not require the `Listen` middleware.**
 
-For simpler setups where persistence is not required, use `MemoryStateStorage`:
+
+#### 1. Memory State Storage:
+- This is an in-memory implementation suitable for temporary state storage.
+
+**Example:**
 
 ```python
 from aiostep.storage import MemoryStateStorage
-from cachebox import TTLCache
 
-storage = MemoryStateStorage(TTLCache(1000, 86400))
+state_manager = MemoryStateStorage()
 
-# Set a state
-storage.set_state(user_id=12345, state="awaiting_input")
+@dp.message_handler(commands=["start"])
+async def start_process(message: Message):
+    state_manager.set_state(
+        user_id=message.from_user.id,
+        state="STEP_ONE"
+    )
+    await message.reply("State set to STEP_ONE!")
 
-# Retrieve the state
-state_context = storage.get_state(user_id=12345)
-print(state_context.current_state)
-
-# Delete the state
-storage.delete_state(user_id=12345)
+@dp.message_handler(lambda message: state_manager.get_state(message.from_user.id).current_state == "STEP_ONE")
+async def handle_step_one(message: Message):
+    await message.reply("You're in STEP_ONE.")
 ```
 
-### Example Usage with Redis-Based Storage
+**Returning to Previous State:**
+```python
+@dp.message_handler(lambda message: message.text == "Back")
+async def go_back(message: Message):
+    step = state_manager.get_state(message.from_user.id)
+    if step and step.callback:
+        await step.callback(message)
+    else:
+        await message.reply("No previous state found.")
+```
+> [!NOTE]\
+> You should manually use getattr to find and call the back step handler if you use `RedisStateStorage` or `FileStateStorage`, because callbacks are saved as strings (function name)
+>```python
+>@dp.message_handler(lambda message: message.text == "Back")
+>async def go_back(message: Message):
+>    step = await state_manager.get_state(message.from_user.id)
+>    if step and step.callback:
+>        callback = getattr(step.callback)
+>        await callback(message)
+>    else:
+>        await message.reply("No previous state found.")
+>```
 
-To store and manage states in Redis, you need to initialize `RedisStateStorage` and integrate it with your bot:
+#### 2. Other Storage Options:
+- File-based and Redis storage implementations are also available, providing similar functionality with persistent data storage.
+- Simply replace MemoryStateStorage with FileStateStorage or RedisStateStorage when initializing the state manager.
+> [!NOTE]\
+> Methods in `MemoryStateStorage` are synchronous, while methods in `FileStateStorage` and `RedisStateStorage` are asynchronous.
+
+---
+
+### Using Data
+
+#### Setting Data
 
 ```python
-from aiostep.storage import FileStateStorage
-
-# File can be .json or anything else
-storage = FileStateStorage("path/to/file.json")
-
-# Setting a state for a user
-await storage.set_state(user_id=12345, state="awaiting_input")
-
-# Getting the current state for a user
-state_context = await storage.get_state(user_id=12345)
-print(state_context.current_state)
-
-# Deleting the current state for a user
-await storage.delete_state(user_id=12345)
+state_manager.set_data(
+    user_id=message.from_user.id,
+    data={"key": "value"}
+)
 ```
 
-### Data Management with States
-
-In addition to states, you can attach custom data to users' sessions. Here's an example of managing user data:
+#### Getting Data
 
 ```python
-# Set custom data
-await storage.set_data(user_id=12345, data={"age": 30, "name": "Alice"})
-
-# Get the stored data
-user_data = await storage.get_data(user_id=12345)
-print(user_data)  # Outputs: {'age': 30, 'name': 'Alice'}
-
-# Update existing data
-await storage.update_data(user_id=12345, data={"location": "Berlin"})
-
-# Clear all data for the user
-await storage.clear_data(user_id=12345)
+data = state_manager.get_data(user_id=message.from_user.id)
+await message.reply(f"Your data: {data}")
 ```
 
 ---
 
-## Advanced State Management
+## Important Notes
 
-The state management system in `aiostep` allows you to define flexible workflows and manage conversation states efficiently. Here are a few additional features:
+1. **Callbacks**:
+   - Callbacks can be any callable object, such as functions.
+   - In `FileStateStorage` and `RedisStateStorage` they are stored as strings (e.g. function name).
 
-- **Custom State Objects**: You can define your own states using Python enums for better structure and clarity.
-- **Dynamic Callbacks**: Store and invoke callback functions dynamically as part of the state context.
+3. **Storage Flexibility**:
+   - The memory-based implementation is ideal for development and testing.
+   - Persistent storage like Redis is recommended for production.
+
+---
+
+## Future Plans
+
+- **Timeouts for States**: Automatic deletion of states after a specified duration.
+- **Additional Storage Backends**: Support for database-based storage solutions.
+- **Improved Documentation**: Detailed guides and best practices.
 
 ---
 
@@ -197,8 +204,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-By leveraging `aiostep`, you can significantly reduce complexity when building advanced Telegram bots with multiple conversation flows. Whether you're managing a simple Q&A session or a multi-step wizard, `aiostep` provides the tools to do it efficiently.
-
-For any contributions, issues, or feedback, feel free to check out the repository and open a discussion or pull request!
-
----
+For more information or to contribute, visit our [GitHub repository](#).
