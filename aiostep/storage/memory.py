@@ -116,7 +116,7 @@ class MemoryStateStorage(BaseStorage):
 
         data_key = self._get_data_key(user_id)
 
-        self.data_cache[data_key] = deepcopy(data)
+        self.cache[data_key] = deepcopy(data)
 
     def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
@@ -129,7 +129,7 @@ class MemoryStateStorage(BaseStorage):
         """
         data_key = self._get_data_key(user_id)
 
-        data_context = self.data_cache.get(data_key)
+        data_context = self.cache.get(data_key)
         return deepcopy(data_context) if data_context else None
 
     def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
@@ -152,9 +152,9 @@ class MemoryStateStorage(BaseStorage):
 
         data_key = self._get_data_key(user_id)
 
-        data_context: dict = self.data_cache.get(data_key)
+        data_context: dict = self.cache.get(data_key)
         if data_context is None:
-            self.data_cache[data_key] = deepcopy(data)
+            self.cache[data_key] = deepcopy(data)
         else:
             data_context.update(deepcopy(data))
 
@@ -165,4 +165,4 @@ class MemoryStateStorage(BaseStorage):
             user_id (int | str): ID of the user
         """
         data_key = self._get_data_key(user_id)
-        self.data_cache.pop(data_key)
+        self.cache.pop(data_key)

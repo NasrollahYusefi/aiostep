@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2024-01-22
+
+### Fixed
+- Fixed a bug in `MemoryStateStorage` affecting the functionality of `set_data`, `get_data`, `update_data`, and `clear_data`, ensuring proper data handling and consistency.
+
+---
+
 ## [0.3.0] - 2024-01-21
 
 ### Added

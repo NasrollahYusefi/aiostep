@@ -1,10 +1,8 @@
 [tool.poetry]
 name = "aiostep"
-version = "0.3.0"
+version = "0.3.1"
 description = "A Python library to handle steps in aiogram framework."
-author = [
-    { name = "Nasrollah Yusefi" }
-]
+authors = ["Nasrollah Yusefi"]
 license = "MIT"
 readme = "README.md"
 keywords = ["aiogram", "steps", "states", "Telegram bot", "asynchronous", "aiostep"]
