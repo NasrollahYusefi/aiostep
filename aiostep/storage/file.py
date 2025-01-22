@@ -198,12 +198,19 @@ class FileStateStorage(BaseStorage):
 
             session[data_key] = json.dumps(state_data)
 
-    async def clear_data(self, user_id: Union[int, str]) -> None:
-        """Clear all data for a user.
+    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+        """Clear and get all data for a user.
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
+
+        Returns:
+            Dict | None: The deleted data or default value
         """
         data_key = self._get_data_key(user_id)
         async with self.cache.session() as session:
-            session.pop(data_key)
+            data = session.pop(data_key, default)
+
+        return data

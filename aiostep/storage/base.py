@@ -72,8 +72,8 @@ class BaseStorage(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def clear_data(self, key: Union[str, int]) -> None:
+    def delete_data(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """
-        use this method to clear current data of a key
+        use this method to clear and get current data of a key
         """
         raise NotImplementedError

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.2] - 2024-01-25
+
+### Changed
+- Renamed the `clear_data` method to `delete_data` in `MemoryStateStorage`, `FileStateStorage`, and `RedisStateStorage`.
+
+### Added
+- `delete_data` now deletes and returns the deleted data.
+- Added a new `default` argument to `delete_data`. If the data doesn't exist, the `default` value will be returned.
+
+---
+
 ## [0.3.1] - 2024-01-22
 
 ### Fixed

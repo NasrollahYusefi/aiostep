@@ -158,11 +158,16 @@ class MemoryStateStorage(BaseStorage):
         else:
             data_context.update(deepcopy(data))
 
-    def clear_data(self, user_id: Union[int, str]) -> None:
-        """Clear all data for a user.
+    def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+        """Clear and get all data for a user.
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
+
+        Returns:
+            Dict | None: The deleted data or default value
         """
         data_key = self._get_data_key(user_id)
-        self.cache.pop(data_key)
+        return self.cache.pop(data_key, default)

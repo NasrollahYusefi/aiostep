@@ -167,7 +167,7 @@ class RedisStateStorage(BaseStorage):
             ex=self.ex
         )
 
-    async def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
+    async def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Get data for a user's state.
 
         Args:
@@ -178,7 +178,7 @@ class RedisStateStorage(BaseStorage):
         """
         data = await self.cache.get(self._get_data_key(user_id))
         if not data:
-            return None
+            return default
 
         state_data = json.loads(data)
         return state_data
@@ -219,11 +219,23 @@ class RedisStateStorage(BaseStorage):
             ex=self.ex
         )
 
-    async def clear_data(self, user_id: Union[int, str]) -> None:
-        """Clear all data for a user's state.
+    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+        """Clear and get all data for a user's state.
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
+
+        Returns:
+            Dict | None: The deleted data or default value
         """
         data_key = self._get_data_key(user_id)
+        data = await self.cache.get(data_key)
         await self.cache.delete(data_key)
+
+        if not data:
+            return default
+
+        data = json.loads(data)
+        return data

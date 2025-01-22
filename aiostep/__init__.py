@@ -2,7 +2,7 @@
 A Python library to handle steps in aiogram framework.
 """
 __author__ = "Nasrollah Yusefi"
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 __all__ = [
     "Listen",
