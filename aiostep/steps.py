@@ -76,17 +76,19 @@ class Listen(BaseMiddleware):
         dp.message.outer_middleware(aiostep.Listen(callback_query=False))
     """
 
-    def __init__(self,
-                 store: typing.Optional[MetaStore] = None,
-                 callback_query: typing.Optional[bool] = None) -> None:
+    def __init__(
+        self,
+        store: typing.Optional[MetaStore] = None,
+        callback_query: typing.Optional[bool] = None
+    ) -> None:
         self.store = store or root
         self.callback_query = callback_query
 
     async def __call__(
-            self,
-            handler: typing.Callable[[TelegramObject, typing.Dict[str, typing.Any]], typing.Awaitable[typing.Any]],
-            event: TelegramObject,
-            data: typing.Dict[str, typing.Any]
+        self,
+        handler: typing.Callable[[TelegramObject, typing.Dict[str, typing.Any]], typing.Awaitable[typing.Any]],
+        event: TelegramObject,
+        data: typing.Dict[str, typing.Any]
     ) -> typing.Any:
 
         fn = None
@@ -115,12 +117,12 @@ class Listen(BaseMiddleware):
 
 
 async def register_next_step(
-        user_id: int,
-        _next: typing.Any,
-        store: typing.Optional[MetaStore] = None,
-        *,
-        args: tuple = (),
-        kwargs: dict = {},
+    user_id: int,
+    _next: typing.Any,
+    store: typing.Optional[MetaStore] = None,
+    *,
+    args: tuple = (),
+    kwargs: dict = {},
 ) -> None:
     """
     register next step for user/chat.
@@ -167,9 +169,9 @@ async def _wait_future(user_id: int, timeout: typing.Optional[float], store: Met
 
 
 async def wait_for(
-        user_id: int,
-        timeout: typing.Optional[float] = None,
-        store: typing.Optional[MetaStore] = None
+    user_id: int,
+    timeout: typing.Optional[float] = None,
+    store: typing.Optional[MetaStore] = None
 ) -> Update:
     """
     wait for update which comming from specific user_id.

@@ -1,31 +1,31 @@
-import os
-from qsave import QuickSave
-
 from enum import Enum
-from typing import Callable, Any, Union, Dict, Optional
+from typing import Callable, Any, Union, Optional, Dict
 from copy import deepcopy
+from cachebox import BaseCacheImpl, Cache
 
-from .base import BaseStorage, StateContext
+from .base import BaseAsyncStorage
+from ..storage.base import StateContext
 
 
-class FileStateStorage(BaseStorage):
-    """File-based storage implementation for managing bot states.
+class AsyncMemoryStateStorage(BaseAsyncStorage):
+    """In-memory storage implementation for managing bot states.
 
-    This class provides a file-based storage solution for managing bot states
-    and their associated data. Suitable for applications where persistence
-    across sessions or restarts is required.
+    This class provides an in-memory storage solution for managing bot states
+    and their associated data. Suitable for development or small applications
+    where persistence isn't required.
 
     Args:
-        path (str | os.PathLike): Path to the file used for storing states and data.
+        cache (dict | None): Optional dictionary to use as storage. If None,
+            an empty dictionary will be used.
     """
 
-    def __init__(self, path: Union[str, os.PathLike], **kwargs) -> None:
-        """Initialize the file storage.
+    def __init__(self, cache: Optional[Union[BaseCacheImpl, dict]] = None) -> None:
+        """Initialize the memory storage.
 
         Args:
-            path (str | os.PathLike): File path to store states and data persistently.
+            cache (dict | None, optional): Initial cache dictionary. Defaults to None.
         """
-        self.cache = QuickSave(path=path, **kwargs)
+        self.cache = cache if cache is not None else Cache(0)
 
     def _get_key(self, user_id: Union[int, str]) -> str:
         """Generate Cache key for a user.
@@ -49,12 +49,12 @@ class FileStateStorage(BaseStorage):
         """
         return f"data:{user_id}"
     
-    def set_state(
-        self, 
-        user_id: Union[int, str], 
-        state: Union[str, Enum], 
-        callback: Optional[Callable[..., Any]] = None, 
-        chat_id: Optional[Union[int, str]] = None,
+    async def set_state(
+        self,
+        user_id: Union[int, str],
+        state: Union[str, Enum],
+        callback: Optional[Callable[..., Any]] = None,
+        chat_id: Optional[Union[int, str]] = None
     ) -> None:
         """Set the state for a user.
 
@@ -67,22 +67,15 @@ class FileStateStorage(BaseStorage):
         if chat_id is None:
             chat_id = user_id
 
-        if isinstance(state, Enum):
-            state = state.name
-
-        callback_name = callback.__name__ if callback else None
-
-        state_data = {
-            "current_state": state,
-            "chat_id": chat_id,
-            "callback": callback_name
-        }
         state_key = self._get_key(user_id)
 
-        with self.cache.session() as session:
-            session[state_key] = state_data
+        self.cache[state_key] = StateContext(
+            current_state=state,
+            callback=callback,
+            chat_id=chat_id
+        )
 
-    def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
@@ -93,15 +86,10 @@ class FileStateStorage(BaseStorage):
         Returns:
             StateContext | None: The state context or default value
         """
-        with self.cache.session(commit_on_expire=False) as session:
-            data = session.get(self._get_key(user_id))
+        state_key = self._get_key(user_id)
+        return self.cache.get(state_key, default)
 
-        if not data:
-            return default
-
-        return StateContext(**data)
-
-    def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
@@ -113,20 +101,9 @@ class FileStateStorage(BaseStorage):
             StateContext | None: The deleted state context or default value
         """
         state_key = self._get_key(user_id)
+        return self.cache.pop(state_key, default)
 
-        with self.cache.session() as session:
-            data = session.pop(state_key)
-
-        if not data:
-            return default
-
-        return StateContext(**data)
-
-    def set_data(
-        self, 
-        user_id: Union[int, str], 
-        data: Dict[Any, Any],
-    ) -> None:
+    async def set_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
         """Set data for a user.
 
         This method completely replaces any existing data.
@@ -140,10 +117,9 @@ class FileStateStorage(BaseStorage):
 
         data_key = self._get_data_key(user_id)
 
-        with self.cache.session() as session:
-            session[data_key] = data
+        self.cache[data_key] = deepcopy(data)
 
-    def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
+    async def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
 
         Args:
@@ -152,15 +128,12 @@ class FileStateStorage(BaseStorage):
         Returns:
             dict[str, Any] | None: The stored data or None if not found
         """
-        with self.cache.session(commit_on_expire=False) as session:
-            data = session.get(self._get_data_key(user_id))
+        data_key = self._get_data_key(user_id)
 
-        if not data:
-            return None
+        data_context = self.cache.get(data_key)
+        return deepcopy(data_context) if data_context else None
 
-        return data
-
-    def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+    async def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
         """Update data for a user.
 
         This method updates existing data with new values, similar to dict.update().
@@ -180,16 +153,13 @@ class FileStateStorage(BaseStorage):
 
         data_key = self._get_data_key(user_id)
 
-        with self.cache.session() as session:
-            current_data = session.get(data_key)
+        data_context: dict = self.cache.get(data_key)
+        if data_context is None:
+            self.cache[data_key] = deepcopy(data)
+        else:
+            data_context.update(deepcopy(data))
 
-            if current_data:
-                current_data.update(data)
-            else:
-                state_data = deepcopy(data)
-                session[data_key] = state_data
-
-    def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user.
 
         Args:
@@ -201,7 +171,4 @@ class FileStateStorage(BaseStorage):
             Dict | None: The deleted data or default value
         """
         data_key = self._get_data_key(user_id)
-        with self.cache.session() as session:
-            data = session.pop(data_key, default)
-
-        return data
+        return self.cache.pop(data_key, default)

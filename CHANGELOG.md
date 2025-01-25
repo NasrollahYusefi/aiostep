@@ -1,6 +1,31 @@
 # Changelog
 
-## [0.3.2] - 2024-01-25
+## [0.3.3] - 2025-01-25
+
+### Added
+- **New async classes**:
+  - `AsyncFileStateStorage`
+  - `AsyncMemoryStateStorage`
+  - `AsyncRedisStateStorage`  
+  These classes provide full asynchronous (async) support for state storage.
+
+- **`ex` argument** added to `set_state`, `set_data`, and `update_data` methods:
+  - The `ex` argument is now supported in `RedisStateStorage` and `AsyncRedisStateStorage` for setting expiry time.
+
+### Changed
+- `FileStateStorage`, `MemoryStateStorage`, and `RedisStateStorage` are now **synchronous (sync)** only.
+  
+- **RedisStateStorage and AsyncRedisStateStorage constructor update**:
+  - The constructor for both classes now accepts additional parameters: `host`, `port`, `db`, and `password`. The `ex` argument was also updated to be optional for expiry handling.
+
+### Improved
+- **Serialization update**: Switched from `json` to `msgspec` for data handling:
+  - Reduced memory usage.
+  - Increased performance.
+
+---
+
+## [0.3.2] - 2024-01-23
 
 ### Changed
 - Renamed the `clear_data` method to `delete_data` in `MemoryStateStorage`, `FileStateStorage`, and `RedisStateStorage`.

@@ -2,7 +2,7 @@
 A Python library to handle steps in aiogram framework.
 """
 __author__ = "Nasrollah Yusefi"
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 __all__ = [
     "Listen",
@@ -11,6 +11,11 @@ __all__ = [
     "unregister_steps",
     "wait_for",
     "clear",
+    "BaseStorage",
+    "StateContext",
+    "MemoryStateStorage",
+    "FileStateStorage",
+    "RedisStateStorage"
 ]
 
 from .steps import (
@@ -21,4 +26,10 @@ from .steps import (
     unregister_steps as unregister_steps,
     wait_for as wait_for,
     clear as clear
+)
+from .storage import (
+    BaseStorage, StateContext,
+    MemoryStateStorage,
+    FileStateStorage,
+    RedisStateStorage
 )

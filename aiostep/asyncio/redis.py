@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable, Union, Any, Dict, Optional
 
 try:
-    from redis import Redis
+    from redis.asyncio.client import Redis
     from redis.typing import ExpiryT
     redis_installed = True
 except ImportError:
@@ -13,10 +13,11 @@ except ImportError:
 
 from typing import Any, Callable
 
-from .base import BaseStorage, StateContext
+from .base import BaseAsyncStorage
+from ..storage.base import StateContext
 
 
-class RedisStateStorage(BaseStorage):
+class AsyncRedisStateStorage(BaseAsyncStorage):
     """Redis-based storage implementation for managing bot states.
 
     This class provides a Redis-backed storage solution for managing bot states
@@ -89,7 +90,7 @@ class RedisStateStorage(BaseStorage):
         """
         return f"data:{user_id}"
 
-    def set_state(
+    async def set_state(
         self, 
         user_id: Union[int, str], 
         state: Union[str, Enum], 
@@ -119,13 +120,13 @@ class RedisStateStorage(BaseStorage):
             "callback": callback_name
         }
 
-        self.cache.set(
+        await self.cache.set(
             self._get_key(user_id),
             self.encoder.encode(state_data),
             ex=ex or self.ex
         )
 
-    def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
@@ -136,7 +137,7 @@ class RedisStateStorage(BaseStorage):
         Returns:
             StateContext | None: The state context or default value
         """
-        data = self.cache.get(self._get_key(user_id))
+        data = await self.cache.get(self._get_key(user_id))
         if not data:
             return default
 

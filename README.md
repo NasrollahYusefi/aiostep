@@ -110,7 +110,7 @@ async def handle_answer(message: Message):
 **Example:**
 
 ```python
-from aiostep.storage import MemoryStateStorage
+from aiostep import MemoryStateStorage
 
 state_manager = MemoryStateStorage()
 
@@ -154,7 +154,37 @@ async def go_back(message: Message):
 - File-based and Redis storage implementations are also available, providing similar functionality with persistent data storage.
 - Simply replace MemoryStateStorage with FileStateStorage or RedisStateStorage when initializing the state manager.
 > [!NOTE]\
-> Methods in `MemoryStateStorage` are synchronous, while methods in `FileStateStorage` and `RedisStateStorage` are asynchronous.
+> Methods in `MemoryStateStorage`, `FileStateStorage` and `RedisStateStorage` are synchronous.
+> **If you want use asynchronous versions, use `aiostep.asyncio`:**
+> ```python
+> from aiostep.asyncio import AsyncMemoryStateStorage
+> from aiostep.asyncio import AsyncFileStateStorage
+> from aiostep.asyncio import AsyncRedisStateStorage
+> ```
+
+#### 3. Timeout States
+
+To set a timeout (expiry) for the state storage, you can use the `ex` argument for both `RedisStateStorage` and `MemoryStateStorage`. Here's how you can set it up:
+
+- **For `MemoryStateStorage`** (using `cachebox.TTLCache`):
+
+    ```python
+    from aiostep import MemoryStateStorage
+    from cachebox import TTLCache
+
+    # Create a TTLCache with a timeout of 200 seconds
+    storage = MemoryStateStorage(TTLCache(0, 200))  # Timeout is 200 seconds
+    ```
+
+- **For `RedisStateStorage`** (using the `ex` argument for expiry time):
+
+    ```python
+    from aiostep import RedisStateStorage
+
+    # Create RedisStateStorage with a timeout of 200 seconds
+    storage = RedisStateStorage(db=0, ex=200)  # Timeout (expiry) is 200 seconds
+    ```
+In both cases, the state will automatically expire after the specified time, and the data will be removed from the storage.
 
 ---
 
