@@ -1,4 +1,5 @@
 import os
+import time
 from qsave import QuickSave
 
 from enum import Enum
@@ -19,13 +20,14 @@ class FileStateStorage(BaseStorage):
         path (str | os.PathLike): Path to the file used for storing states and data.
     """
 
-    def __init__(self, path: Union[str, os.PathLike], **kwargs) -> None:
+    def __init__(self, path: Union[str, os.PathLike], ex: Optional[float] = None, **kwargs) -> None:
         """Initialize the file storage.
 
         Args:
             path (str | os.PathLike): File path to store states and data persistently.
         """
         self.cache = QuickSave(path=path, **kwargs)
+        self.ex = ex
 
     def _get_key(self, user_id: Union[int, str]) -> str:
         """Generate Cache key for a user.
@@ -55,6 +57,7 @@ class FileStateStorage(BaseStorage):
         state: Union[str, Enum], 
         callback: Optional[Callable[..., Any]] = None, 
         chat_id: Optional[Union[int, str]] = None,
+        ex: Optional[float] = None
     ) -> None:
         """Set the state for a user.
 
@@ -71,12 +74,15 @@ class FileStateStorage(BaseStorage):
             state = state.name
 
         callback_name = callback.__name__ if callback else None
+        ex = ex or self.ex
 
         state_data = {
             "current_state": state,
             "chat_id": chat_id,
             "callback": callback_name
         }
+        if ex:
+            state_data["expire"] = time.time() + ex
         state_key = self._get_key(user_id)
 
         with self.cache.session() as session:
@@ -96,8 +102,12 @@ class FileStateStorage(BaseStorage):
         with self.cache.session(commit_on_expire=False) as session:
             data = session.get(self._get_key(user_id))
 
-        if not data:
-            return default
+            if not data:
+                return default
+            if data.get("expire") and (data.get("expire") < time.time()):
+                session.pop(self._get_key(user_id))
+                session.commit()
+                return default
 
         return StateContext(**data)
 
@@ -119,6 +129,8 @@ class FileStateStorage(BaseStorage):
 
         if not data:
             return default
+        if data.get("expire") and (data.get("expire") < time.time()):
+            return default
 
         return StateContext(**data)
 
@@ -126,6 +138,7 @@ class FileStateStorage(BaseStorage):
         self, 
         user_id: Union[int, str], 
         data: Dict[Any, Any],
+        ex: Optional[float] = None
     ) -> None:
         """Set data for a user.
 
@@ -138,12 +151,17 @@ class FileStateStorage(BaseStorage):
         if not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
 
+        data = deepcopy(data)
+
         data_key = self._get_data_key(user_id)
+        ex = ex or self.ex
+        if ex:
+            data["expire"] = time.time() + ex
 
         with self.cache.session() as session:
             session[data_key] = data
 
-    def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
+    def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
 
         Args:
@@ -155,12 +173,21 @@ class FileStateStorage(BaseStorage):
         with self.cache.session(commit_on_expire=False) as session:
             data = session.get(self._get_data_key(user_id))
 
-        if not data:
-            return None
+            if not data:
+                return default
+            if data.get("expire") and (data.get("expire") < time.time()):
+                session.pop(self._get_data_key(user_id))
+                session.commit()
+                return default
 
         return data
 
-    def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+    def update_data(
+        self,
+        user_id: Union[int, str],
+        data: Dict[Any, Any],
+        ex: Optional[float] = None
+    ) -> None:
         """Update data for a user.
 
         This method updates existing data with new values, similar to dict.update().
@@ -178,7 +205,12 @@ class FileStateStorage(BaseStorage):
         if not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
 
+        data = deepcopy(data)
+
         data_key = self._get_data_key(user_id)
+        ex = ex or self.ex
+        if ex:
+            data["expire"] = time.time() + ex
 
         with self.cache.session() as session:
             current_data = session.get(data_key)
@@ -186,8 +218,7 @@ class FileStateStorage(BaseStorage):
             if current_data:
                 current_data.update(data)
             else:
-                state_data = deepcopy(data)
-                session[data_key] = state_data
+                session[data_key] = data
 
     def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user.
@@ -203,5 +234,9 @@ class FileStateStorage(BaseStorage):
         data_key = self._get_data_key(user_id)
         with self.cache.session() as session:
             data = session.pop(data_key, default)
+
+        if isinstance(data, dict):
+            if data.get("expire") and (data.get("expire") < time.time()):
+                return default
 
         return data

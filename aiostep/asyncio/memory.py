@@ -67,6 +67,9 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         if chat_id is None:
             chat_id = user_id
 
+        if isinstance(state, Enum):
+            state = state.name
+
         state_key = self._get_key(user_id)
 
         self.cache[state_key] = StateContext(

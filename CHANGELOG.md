@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.4] - 2025-01-26
+
+### Added
+- **`ex` argument in `FileStateStorage` and `AsyncFileStateStorage`**:
+  - You can now set a default expiry time (`ex`) globally in the `__init__` method.
+  - The `ex` argument is also available in the `set_state`, `set_data`, and `update_data` methods, allowing you to specify expiry times for individual states.
+
+### Changed
+- **Unified `Enum` handling across storages**:
+  - All storage classes (`RedisStateStorage`, `FileStateStorage`, `MemoryStateStorage` and `async` versions) now save only the `.name` of an `Enum` passed as a state (if it's an `Enum`), instead of saving the entire `Enum` object. This ensures consistent behavior across all storages.
+
+---
+
 ## [0.3.3] - 2025-01-25
 
 ### Added

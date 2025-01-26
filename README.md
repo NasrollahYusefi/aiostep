@@ -3,10 +3,15 @@
 ![License](https://img.shields.io/pypi/l/aiostep)
 ![Total Downloads](https://static.pepy.tech/badge/aiostep)
 ![Downloads](https://img.shields.io/pypi/dm/aiostep)
+[![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue?logo=telegram&style=flat-square)](https://t.me/aiostep_chat)
 
-# AIOStep - Simple and Flexible State Management
 
-AIOStep is a lightweight and flexible state management tool designed for Telegram bots and similar applications. It allows developers to track user states and manage transitions between them with ease. Whether you're building a multi-step form, handling complex user interactions, or simply need to store temporary user data, AIOStep makes it straightforward.
+# Aiostep - Simple and Flexible State Management
+
+Aiostep is a lightweight and flexible state management tool designed for Telegram bots and similar applications. It allows developers to track user states and manage transitions between them with ease. Whether you're building a multi-step form, handling complex user interactions, or simply need to store temporary user data, Aiostep makes it straightforward.
+
+_We have a vibrant community of developers helping each other in our_ **[Telegram group](https://t.me/aiostep_chat)**. _Join us!_
+_Stay tuned for library updates and new releases on our_ **[Telegram Channel](https://t.me/aiostep)**.
 
 ---
 
@@ -23,7 +28,7 @@ AIOStep is a lightweight and flexible state management tool designed for Telegra
 
 ### User Interaction Methods
 
-AIOStep provides three primary methods for interacting with users and managing multi-step processes:
+Aiostep provides three primary methods for interacting with users and managing multi-step processes:
 
 1. **`wait_for`**:
    - Use this method to wait for a specific user response within the current handler.
@@ -41,7 +46,7 @@ AIOStep provides three primary methods for interacting with users and managing m
 
 ## Installation
 
-To start using AIOStep, simply include the relevant files in your project or install via pip if packaged.
+To start using Aiostep, simply install it via pip.
 
 ```bash
 pip install --upgrade aiostep
@@ -57,7 +62,7 @@ pip install --upgrade aiostep[redis]
 ## Usage
 
 ### Using `wait_for` and `register_next_step`
-**AIOStep offers two primary methods for managing direct user interactions:**
+**Aiostep offers two primary methods for managing direct user interactions:**
 
 #### 1. `wait_for`:
 - This method allows you to wait for a user response directly within the current handler.
@@ -101,7 +106,7 @@ async def handle_answer(message: Message):
 ```
 
 ### Using States
-**AIOStep supports managing user states to handle multi-step workflows. Unlike the previous methods, managing states does not require the `Listen` middleware.**
+**Aiostep supports managing user states to handle multi-step workflows. Unlike the previous methods, managing states does not require the `Listen` middleware.**
 
 
 #### 1. Memory State Storage:
@@ -164,13 +169,16 @@ async def go_back(message: Message):
 
 #### 3. Timeout States
 
-To set a timeout (expiry) for the state storage, you can use the `ex` argument for both `RedisStateStorage` and `MemoryStateStorage`. Here's how you can set it up:
+To set a timeout (expiry) for the state storage, you can use the `ex` argument for both `RedisStateStorage` and `FileStateStorage`.
+But for `MemoryStateStorage` you need to pass a TTLCache if you want set timeout.
+
+Here's how you can set it up:
 
 - **For `MemoryStateStorage`** (using `cachebox.TTLCache`):
 
     ```python
     from aiostep import MemoryStateStorage
-    from cachebox import TTLCache
+    from cachebox import TTLCache  # cachetools.TTLCache also works
 
     # Create a TTLCache with a timeout of 200 seconds
     storage = MemoryStateStorage(TTLCache(0, 200))  # Timeout is 200 seconds
@@ -180,9 +188,11 @@ To set a timeout (expiry) for the state storage, you can use the `ex` argument f
 
     ```python
     from aiostep import RedisStateStorage
+    from aiostep import FileStateStorage
 
     # Create RedisStateStorage with a timeout of 200 seconds
     storage = RedisStateStorage(db=0, ex=200)  # Timeout (expiry) is 200 seconds
+    storage = FileStateStorage("path.txt", ex=200)  # Same as RedisStateStorage
     ```
 In both cases, the state will automatically expire after the specified time, and the data will be removed from the storage.
 
@@ -222,8 +232,7 @@ await message.reply(f"Your data: {data}")
 
 ## Future Plans
 
-- **Timeouts for States**: Automatic deletion of states after a specified duration.
-- **Additional Storage Backends**: Support for database-based storage solutions.
+- **Better Library Compatibility**: Enhanced support for other Telegram bot libraries such as `pyTelegramBotAPI` and `python-telegram-bot`, in addition to `aiogram`.
 - **Improved Documentation**: Detailed guides and best practices.
 
 ---
