@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiostep"
-version = "0.3.4"
+version = "0.3.5"
 description = "A Python library to handle steps in aiogram framework."
 authors = ["Nasrollah Yusefi"]
 license = "MIT"

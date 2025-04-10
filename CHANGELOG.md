@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.5] - 2025-04-10
+
+### Fixed
+- **Fix `RedisStateStorage` sync issues and apply minor improvements**:
+  - Removed mistakenly `async` methods from sync `RedisStateStorage`.
+
+---
+
 ## [0.3.4] - 2025-01-26
 
 ### Added
