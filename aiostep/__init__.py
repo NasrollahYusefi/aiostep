@@ -20,12 +20,14 @@ __all__ = [
 
 from .steps import (
     MetaStore as MetaStore,
-    Listen as Listen,
     change_root_store as change_root_store,
     register_next_step as register_next_step,
     unregister_steps as unregister_steps,
     wait_for as wait_for,
-    clear as clear
+    clear as clear,
+    aiogram_dialect as aiogram_dialect,
+    telebot_dialect as telebot_dialect,
+    telethon_dialect as telethon_dialect
 )
 from .storage import (
     BaseStorage, StateContext,

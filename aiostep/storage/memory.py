@@ -121,11 +121,13 @@ class MemoryStateStorage(BaseStorage):
 
         self.cache[data_key] = deepcopy(data)
 
-    def get_data(self, user_id: Union[int, str]) -> Optional[Dict[Any, Any]]:
+    def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
 
         Returns:
             dict[str, Any] | None: The stored data or None if not found
@@ -133,7 +135,7 @@ class MemoryStateStorage(BaseStorage):
         data_key = self._get_data_key(user_id)
 
         data_context = self.cache.get(data_key)
-        return deepcopy(data_context) if data_context else None
+        return deepcopy(data_context) if data_context else default
 
     def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
         """Update data for a user.

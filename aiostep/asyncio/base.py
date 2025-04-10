@@ -41,7 +41,7 @@ class BaseAsyncStorage(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    async def get_data(self, key: Union[str, int]) -> Dict[Any, Any]:
+    async def get_data(self, key: Union[str, int], default: Optional[Any] = None) -> Dict[Any, Any]:
         """
         use this method to get current data of a key
         """

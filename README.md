@@ -11,6 +11,7 @@
 Aiostep is a lightweight and flexible state management tool designed for Telegram bots and similar applications. It allows developers to track user states and manage transitions between them with ease. Whether you're building a multi-step form, handling complex user interactions, or simply need to store temporary user data, Aiostep makes it straightforward.
 
 _We have a vibrant community of developers helping each other in our_ **[Telegram group](https://t.me/aiostep_chat)**. _Join us!_
+
 _Stay tuned for library updates and new releases on our_ **[Telegram Channel](https://t.me/aiostep)**.
 
 ---

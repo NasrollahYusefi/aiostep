@@ -143,7 +143,7 @@ class RedisStateStorage(BaseStorage):
         state_data = self.decoder.decode(data)
         return StateContext(**state_data)
 
-    async def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
@@ -155,8 +155,8 @@ class RedisStateStorage(BaseStorage):
             StateContext | None: The deleted state context or default value
         """
         state_key = self._get_key(user_id)
-        data = await self.cache.get(state_key)
-        await self.cache.delete(state_key)
+        data = self.cache.get(state_key)
+        self.cache.delete(state_key)
 
         if not data:
             return default
@@ -164,7 +164,7 @@ class RedisStateStorage(BaseStorage):
         state_data = self.decoder.decode(data)
         return StateContext(**state_data)
 
-    async def set_data(
+    def set_data(
         self, 
         user_id: Union[int, str],
         data: Dict[Any, Any],
@@ -183,29 +183,31 @@ class RedisStateStorage(BaseStorage):
 
         data_key = self._get_data_key(user_id)
 
-        await self.cache.set(
+        self.cache.set(
             data_key,
             self.encoder.encode(data),
             ex=ex or self.ex
         )
 
-    async def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Get data for a user's state.
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
 
         Returns:
             dict[str, Any] | None: The stored data or None if not found
         """
-        data = await self.cache.get(self._get_data_key(user_id))
+        data = self.cache.get(self._get_data_key(user_id))
         if not data:
             return default
 
         state_data = self.decoder.decode(data)
         return state_data
 
-    async def update_data(
+    def update_data(
         self,
         user_id: Union[int, str],
         data: Dict[Any, Any],
@@ -229,7 +231,7 @@ class RedisStateStorage(BaseStorage):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
 
         data_key = self._get_data_key(user_id)
-        current_data = await self.cache.get(data_key)
+        current_data = self.cache.get(data_key)
 
         if current_data:
             try:
@@ -240,13 +242,13 @@ class RedisStateStorage(BaseStorage):
         else:
             state_data = deepcopy(data)
 
-        await self.cache.set(
+        self.cache.set(
             data_key,
             self.encoder.encode(state_data),
             ex=ex or self.ex
         )
 
-    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user's state.
 
         Args:
@@ -258,8 +260,8 @@ class RedisStateStorage(BaseStorage):
             Dict | None: The deleted data or default value
         """
         data_key = self._get_data_key(user_id)
-        data = await self.cache.get(data_key)
-        await self.cache.delete(data_key)
+        data = self.cache.get(data_key)
+        self.cache.delete(data_key)
 
         if not data:
             return default

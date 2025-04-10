@@ -3,9 +3,6 @@ import typing
 import functools
 import cachebox
 
-from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Update
-
 _MT = typing.Union[asyncio.Future, typing.Callable]
 
 
@@ -57,65 +54,6 @@ def change_root_store(store: MetaStore) -> None:
     root = store
 
 
-class Listen(BaseMiddleware):
-    """
-    aiogram middleware to listen for steps.
-
-    supported handlers:
-        - `MessageHandler`
-        - `CallbackQueryHandler`
-        - `ChatJoinRequestHandler`
-        - `ChatMemberUpdatedHandler`
-        - `ChosenInlineResultHandler`
-        - `EditedMessageHandler`
-        - `InlineQueryHandler`
-
-    Example::
-
-        dp = Dispatcher()
-        dp.message.outer_middleware(aiostep.Listen(callback_query=False))
-    """
-
-    def __init__(
-        self,
-        store: typing.Optional[MetaStore] = None,
-        callback_query: typing.Optional[bool] = None
-    ) -> None:
-        self.store = store or root
-        self.callback_query = callback_query
-
-    async def __call__(
-        self,
-        handler: typing.Callable[[TelegramObject, typing.Dict[str, typing.Any]], typing.Awaitable[typing.Any]],
-        event: TelegramObject,
-        data: typing.Dict[str, typing.Any]
-    ) -> typing.Any:
-
-        fn = None
-
-        if self.callback_query:
-            chat_id = event.message.chat.id
-        else:
-            chat_id = event.chat.id
-
-        try:
-            fn = await self.store.pop_item(event.from_user.id)
-        except (KeyError, AttributeError):
-            try:
-                fn = await self.store.pop_item(chat_id)
-            except (KeyError, AttributeError):
-                pass
-
-        if fn is not None:
-            if isinstance(fn, asyncio.Future):
-                fn.set_result(event)
-                return
-            await fn(event)
-            return
-
-        return await handler(event, data)
-
-
 async def register_next_step(
     user_id: int,
     _next: typing.Any,
@@ -157,7 +95,11 @@ async def unregister_steps(user_id: int, store: typing.Optional[MetaStore] = Non
             u.cancel("cancelled")
 
 
-async def _wait_future(user_id: int, timeout: typing.Optional[float], store: MetaStore) -> Update:
+async def _wait_future(
+    user_id: int,
+    timeout: typing.Optional[float],
+    store: MetaStore
+):
     fn = asyncio.get_event_loop().create_future()
 
     await store.set_item(user_id, fn)
@@ -172,7 +114,7 @@ async def wait_for(
     user_id: int,
     timeout: typing.Optional[float] = None,
     store: typing.Optional[MetaStore] = None
-) -> Update:
+):
     """
     wait for update which comming from specific user_id.
 

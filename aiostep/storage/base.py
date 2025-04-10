@@ -59,7 +59,7 @@ class BaseStorage(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def get_data(self, key: Union[str, int]) -> Dict[Any, Any]:
+    def get_data(self, key: Union[str, int], default: Optional[Any] = None) -> Dict[Any, Any]:
         """
         use this method to get current data of a key
         """

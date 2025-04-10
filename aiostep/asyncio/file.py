@@ -166,6 +166,8 @@ class AsyncFileStateStorage(BaseAsyncStorage):
 
         Args:
             user_id (int | str): ID of the user
+            default (Any, optional): Default value if data doesn't exist. 
+                Defaults to None.
 
         Returns:
             dict[str, Any] | None: The stored data or None if not found
