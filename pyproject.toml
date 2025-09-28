@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "aiostep"
-version = "0.3.5"
+version = "0.3.6"
 description = "A Python library to handle steps in aiogram framework."
 authors = ["Nasrollah Yusefi"]
 license = "MIT"
 readme = "README.md"
-keywords = ["aiogram", "steps", "states", "Telegram bot", "asynchronous", "aiostep"]
+keywords = ["aiogram", "steps", "states", "Telegram bot", "asynchronous", "aiostep", "telebot", "telethon"]
 
 [tool.poetry.dependencies]
 python = "^3.9"

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.6] - 2025-09-28
+
+### Added
+- **Added support for telebot and telethon in `wait_for` and `register_next_step`**:
+  - Users can now use these features with telebot and telethon by importing the respective dialects (`telebot_dialect` or `telethon_dialect`).
+
+- **Added a new `IsState` class in the utils module**:
+  - This class can be used as a filter for aiogram updates.
+
+### Changed
+- **Updated `aiogram` usage**:
+  - Previously, `Listen` was imported directly from `aiostep`.
+  - Now, for `aiogram`, It should be used via `aiogram_dialect.Listen`.
+
+---
+
 ## [0.3.5] - 2025-04-10
 
 ### Fixed

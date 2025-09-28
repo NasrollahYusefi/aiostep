@@ -71,13 +71,15 @@ pip install --upgrade aiostep[redis]
 
 **Example:**
 ```python
-from aiostep import Listen, wait_for
-from aiogram import Dispatcher
+from aiostep import aiogram_dialect, wait_for
+
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
 
 dp = Dispatcher()
-dp.message.outer_middleware(Listen())
+dp.message.outer_middleware(aiogram_dialect.Listen())
 
-@dp.message_handler(commands=["start"])
+@dp.message(filters.CommandStart())
 async def ask_question(message: Message):
     await message.reply("Please type something:")
     try:
@@ -97,7 +99,16 @@ async def ask_question(message: Message):
 **Example:**
 
 ```python
-@dp.message_handler(commands=["start"])
+import aiostep
+from aiostep import aiogram_dialect
+
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
+
+dp = Dispatcher()
+dp.message.outer_middleware(aiogram_dialect.Listen())
+
+@dp.message(filters.CommandStart())
 async def ask_question(message: Message):
     await aiostep.register_next_step(message.chat.id, handle_answer)
     await message.reply("What's your name?")
@@ -117,10 +128,15 @@ async def handle_answer(message: Message):
 
 ```python
 from aiostep import MemoryStateStorage
+from aiostep.utils import IsState
 
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
+
+dp = Dispatcher()
 state_manager = MemoryStateStorage()
 
-@dp.message_handler(commands=["start"])
+@dp.message(filters.CommandStart())
 async def start_process(message: Message):
     state_manager.set_state(
         user_id=message.from_user.id,
@@ -128,14 +144,19 @@ async def start_process(message: Message):
     )
     await message.reply("State set to STEP_ONE!")
 
-@dp.message_handler(lambda message: state_manager.get_state(message.from_user.id).current_state == "STEP_ONE")
+@dp.message(IsState("STEP_ONE", state_manager))
 async def handle_step_one(message: Message):
     await message.reply("You're in STEP_ONE.")
+    state_manager.delete_state(
+        user_id=message.from_user.id,
+    )
 ```
 
 **Returning to Previous State:**
 ```python
-@dp.message_handler(lambda message: message.text == "Back")
+from aiogram import F
+
+@dp.message(F.text == "Back")
 async def go_back(message: Message):
     step = state_manager.get_state(message.from_user.id)
     if step and step.callback:
@@ -146,9 +167,9 @@ async def go_back(message: Message):
 > [!NOTE]\
 > You should manually use getattr to find and call the back step handler if you use `RedisStateStorage` or `FileStateStorage`, because callbacks are saved as strings (function name)
 >```python
->@dp.message_handler(lambda message: message.text == "Back")
+>@dp.message_handler(F.text == "Back")
 >async def go_back(message: Message):
->    step = await state_manager.get_state(message.from_user.id)
+>    step = state_manager.get_state(message.from_user.id)
 >    if step and step.callback:
 >        callback = getattr(step.callback)
 >        await callback(message)
