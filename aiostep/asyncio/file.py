@@ -1,13 +1,12 @@
 import os
 import time
-from qsave.asyncio import AsyncQuickSave
-
 from enum import Enum
-from typing import Callable, Any, Union, Dict, Optional
-from copy import deepcopy
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from .base import BaseAsyncStorage
+from qsave.asyncio import AsyncQuickSave, AsyncSession
+
 from ..storage.base import StateContext
+from .base import BaseAsyncStorage
 
 
 class AsyncFileStateStorage(BaseAsyncStorage):
@@ -21,11 +20,14 @@ class AsyncFileStateStorage(BaseAsyncStorage):
         path (str | os.PathLike): Path to the file used for storing states and data.
     """
 
-    def __init__(self, path: Union[str, os.PathLike], ex: Optional[float] = None, **kwargs) -> None:
+    def __init__(
+        self, path: Union[str, os.PathLike], ex: Optional[float] = None, **kwargs
+    ) -> None:
         """Initialize the file storage.
 
         Args:
             path (str | os.PathLike): File path to store states and data persistently.
+            ex (float | None): expiry time for objects. pass in seconds.
         """
         self.cache = AsyncQuickSave(path=path, **kwargs)
         self.ex = ex
@@ -51,14 +53,14 @@ class AsyncFileStateStorage(BaseAsyncStorage):
             str: Cache key
         """
         return f"data:{user_id}"
-    
+
     async def set_state(
-        self, 
-        user_id: Union[int, str], 
-        state: Union[str, Enum], 
-        callback: Optional[Callable[..., Any]] = None, 
+        self,
+        user_id: Union[int, str],
+        state: Union[str, Enum],
+        callback: Optional[Callable[..., Any]] = None,
         chat_id: Optional[Union[int, str]] = None,
-        ex: Optional[float] = None
+        ex: Optional[float] = None,
     ) -> None:
         """Set the state for a user.
 
@@ -79,8 +81,9 @@ class AsyncFileStateStorage(BaseAsyncStorage):
         state_data = {
             "current_state": state,
             "chat_id": chat_id,
-            "callback": callback_name
+            "callback": callback_name,
         }
+        ex = ex or self.ex
         if ex:
             state_data["expire"] = time.time() + ex
         state_key = self._get_key(user_id)
@@ -88,12 +91,14 @@ class AsyncFileStateStorage(BaseAsyncStorage):
         async with self.cache.session() as session:
             session[state_key] = state_data
 
-    async def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def get_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -104,19 +109,22 @@ class AsyncFileStateStorage(BaseAsyncStorage):
 
             if not data:
                 return default
-            if data.get("expire") and (data.get("expire") < time.time()):
+            expire = data.pop("expire", None)
+            if expire and (expire < time.time()):
                 session.pop(self._get_key(user_id))
                 await session.commit()
                 return default
 
         return StateContext(**data)
 
-    async def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def delete_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -135,10 +143,11 @@ class AsyncFileStateStorage(BaseAsyncStorage):
         return StateContext(**data)
 
     async def set_data(
-        self, 
+        self,
         user_id: Union[int, str],
-        data: Dict[Any, Any],
-        ex: Optional[float] = None
+        data: Optional[Dict[Any, Any]] = None,
+        ex: Optional[float] = None,
+        **kwargs,
     ) -> None:
         """Set data for a user.
 
@@ -148,25 +157,37 @@ class AsyncFileStateStorage(BaseAsyncStorage):
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to store
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
 
-        data = deepcopy(data)
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
-        ex = ex or self.ex
-        if ex:
-            data["expire"] = time.time() + ex
 
         async with self.cache.session() as session:
-            session[data_key] = data
+            ex = ex or self.ex
+            new_data = {
+                "data": data_payload,
+            }
+            if ex:
+                new_data["ex"] = time.time() + ex
+            session[data_key] = new_data
 
-    async def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def get_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -177,18 +198,19 @@ class AsyncFileStateStorage(BaseAsyncStorage):
 
             if not data:
                 return default
-            if data.get("expire") and (data.get("expire") < time.time()):
+            if data.get("ex") and data.get("ex") < time.time():
                 session.pop(self._get_data_key(user_id))
                 await session.commit()
                 return default
 
-        return data
+        return data["data"]
 
     async def update_data(
         self,
         user_id: Union[int, str],
-        data: Dict[Any, Any],
-        ex: Optional[float] = None
+        data: Optional[Dict[Any, Any]] = None,
+        ex: Optional[float] = None,
+        **kwargs,
     ) -> None:
         """Update data for a user.
 
@@ -198,36 +220,50 @@ class AsyncFileStateStorage(BaseAsyncStorage):
         Args:
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to update
-        
+
         Example:
             >>> # Existing data: {"name": "John"}
             >>> await storage.update_data(user_id, {"age": 25})
             >>> # Result: {"name": "John", "age": 25}
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
 
-        data = deepcopy(data)
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
-        ex = ex or self.ex
-        if ex:
-            data["expire"] = time.time() + ex
 
         async with self.cache.session() as session:
             current_data = session.get(data_key)
 
             if current_data:
-                current_data.update(data)
+                current_data["data"].update(data_payload)
+                if ex:
+                    current_data["ex"] = time.time() + ex
             else:
-                session[data_key] = data
+                ex = ex or self.ex
+                new_data = {
+                    "data": data_payload,
+                }
+                if ex:
+                    new_data["ex"] = time.time() + ex
+                session[data_key] = new_data
 
-    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def delete_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:

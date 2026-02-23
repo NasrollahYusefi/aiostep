@@ -1,6 +1,7 @@
 import asyncio
-import typing
 import functools
+import typing
+
 import cachebox
 
 _MT = typing.Union[asyncio.Future, typing.Callable]
@@ -80,7 +81,9 @@ async def register_next_step(
     await (store or root).set_item(user_id, _next)
 
 
-async def unregister_steps(user_id: int, store: typing.Optional[MetaStore] = None) -> None:
+async def unregister_steps(
+    user_id: int, store: typing.Optional[MetaStore] = None
+) -> None:
     """
     unregister steps for `user_id`.
 
@@ -95,11 +98,7 @@ async def unregister_steps(user_id: int, store: typing.Optional[MetaStore] = Non
             u.cancel("cancelled")
 
 
-async def _wait_future(
-    user_id: int,
-    timeout: typing.Optional[float],
-    store: MetaStore
-):
+async def _wait_future(user_id: int, timeout: typing.Optional[float], store: MetaStore):
     fn = asyncio.get_event_loop().create_future()
 
     await store.set_item(user_id, fn)
@@ -113,7 +112,7 @@ async def _wait_future(
 async def wait_for(
     user_id: int,
     timeout: typing.Optional[float] = None,
-    store: typing.Optional[MetaStore] = None
+    store: typing.Optional[MetaStore] = None,
 ):
     """
     wait for update which comming from specific user_id.

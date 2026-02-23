@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.7] - 2026-02-23
+
+### Added
+
+- You can now pass data as keyword arguments to `set_data` and `update_data`.
+
+---
+
 ## [0.3.6] - 2025-09-28
 
 ### Added

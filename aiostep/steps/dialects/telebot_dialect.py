@@ -2,10 +2,12 @@ import asyncio
 import typing
 
 try:
-    from telebot import types, SkipHandler
+    from telebot import SkipHandler, types
     from telebot.async_telebot import BaseMiddleware
+
     telebot_installed = True
 except ImportError:
+
     class BaseMiddleware:
         pass
 
@@ -30,10 +32,11 @@ class Listen(BaseMiddleware):
         bot = TeleBot()
         bot.setup_middleware(Listen(update_types=["message", "callback_query"]))
     """
+
     def __init__(
         self,
         update_types: typing.Optional[typing.List[str]] = None,
-        store: typing.Optional[MetaStore] = None
+        store: typing.Optional[MetaStore] = None,
     ):
         if not telebot_installed:
             raise ImportError(
@@ -84,7 +87,9 @@ class Listen(BaseMiddleware):
             await fn(call)
             return SkipHandler()
 
-    async def post_process_callback_query(self, call: "types.CallbackQuery", data, exception):
+    async def post_process_callback_query(
+        self, call: "types.CallbackQuery", data, exception
+    ):
         pass
 
     async def pre_process_edited_message(self, message: "types.Message", data):
@@ -105,10 +110,14 @@ class Listen(BaseMiddleware):
             await fn(message)
             return SkipHandler()
 
-    async def post_process_edited_message(self, message: "types.Message", data, exception):
+    async def post_process_edited_message(
+        self, message: "types.Message", data, exception
+    ):
         pass
 
-    async def pre_process_chat_join_request(self, join_request: "types.ChatJoinRequest", data):
+    async def pre_process_chat_join_request(
+        self, join_request: "types.ChatJoinRequest", data
+    ):
         fn = None
 
         try:
@@ -126,7 +135,9 @@ class Listen(BaseMiddleware):
             await fn(join_request)
             return SkipHandler()
 
-    async def post_process_chat_join_request(self, join_request: "types.ChatJoinRequest", data, exception):
+    async def post_process_chat_join_request(
+        self, join_request: "types.ChatJoinRequest", data, exception
+    ):
         pass
 
     async def pre_process_chat_member(self, status: "types.ChatMemberUpdated", data):
@@ -147,5 +158,7 @@ class Listen(BaseMiddleware):
             await fn(status)
             return SkipHandler()
 
-    async def post_process_chat_member(self, status: "types.ChatMemberUpdated", data, exception):
+    async def post_process_chat_member(
+        self, status: "types.ChatMemberUpdated", data, exception
+    ):
         pass

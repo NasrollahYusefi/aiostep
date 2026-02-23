@@ -240,16 +240,30 @@ In both cases, the state will automatically expire after the specified time, and
 ```python
 state_manager.set_data(
     user_id=message.from_user.id,
-    data={"key": "value"}
+    data={"key": "value"},
+    other_key="other_value",
 )
 ```
 
 #### Getting Data
 
 ```python
-data = state_manager.get_data(user_id=message.from_user.id)
-print(f"Data saved for {message.from_user.id} is: {data}")
+data = state_manager.get_data(user_id=user_id)
+print(f"Data saved for {user_id} is: {data}")
 ```
+
+#### Updating Data
+
+```python
+state_manager.update_data(
+    user_id=user_id,
+    data={"key": "value"},
+    other_key="other_value",
+)
+```
+
+> [!TIP]\
+> You can pass data as a dictionary or keyword argument to `set_data` and `update_data`
 
 ---
 

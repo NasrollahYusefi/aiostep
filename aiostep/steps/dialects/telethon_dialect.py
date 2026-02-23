@@ -3,6 +3,7 @@ import typing
 
 try:
     from telethon import TelegramClient, events
+
     telethon_installed = True
 except ImportError:
     telethon_installed = False
@@ -14,7 +15,7 @@ def Listen(
     app: "TelegramClient",
     store: typing.Optional[MetaStore] = None,
     event: typing.Any = None,
-    **kwargs
+    **kwargs,
 ) -> None:
     """
     telethon listen client for steps.
@@ -31,9 +32,7 @@ def Listen(
     """
     if not telethon_installed:
         raise ImportError(
-            "telethon package is not installed. "
-            "install package: "
-            "pip install telethon"
+            "telethon package is not installed. install package: pip install telethon"
         )
     store = store or root
     event = event or events.NewMessage

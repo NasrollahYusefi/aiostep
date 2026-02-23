@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Union, Optional, Dict
+from typing import Any, Dict, Optional, Union
 
 
 class BaseAsyncStorage(ABC):
@@ -16,7 +16,9 @@ class BaseAsyncStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_state(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[str]:
+    async def get_state(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[str]:
         """
         use this method to get current state of a key
 
@@ -25,37 +27,47 @@ class BaseAsyncStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def delete_state(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[str]:
+    async def delete_state(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[str]:
         """
         use this method to delete and get current state of a key
-        
+
         return default if not found
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    async def set_data(self, key: Union[str, int], data: Dict[Any, Any]) -> None:
+    async def set_data(
+        self, key: Union[str, int], data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """
         use this method to set data for a key
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    async def get_data(self, key: Union[str, int], default: Optional[Any] = None) -> Dict[Any, Any]:
+    async def get_data(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Dict[Any, Any]:
         """
         use this method to get current data of a key
         """
         raise NotImplementedError
 
     @abstractmethod
-    async def update_data(self, key: int, data: Dict[Any, Any]) -> None:
+    async def update_data(
+        self, key: int, data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """
         use thid method to update current data of a key
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    async def delete_data(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def delete_data(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """
         use this method to clear and get current data of a key
         """

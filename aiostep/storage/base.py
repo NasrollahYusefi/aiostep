@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from enum import Enum
 from dataclasses import dataclass
-from typing import Callable, Any, Union, Optional, Dict
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Union
 
 
 @dataclass
@@ -16,6 +16,7 @@ class StateContext:
         callback (Callable | None): Callback function or its name
         chat_id (int | str): ID of the chat
     """
+
     current_state: Optional[Enum] = None
     callback: Optional[Callable[..., Any]] = None
     chat_id: Optional[Union[int, str]] = None
@@ -34,7 +35,9 @@ class BaseStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_state(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[str]:
+    def get_state(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[str]:
         """
         use this method to get current state of a key
 
@@ -43,36 +46,47 @@ class BaseStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete_state(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[str]:
+    def delete_state(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[str]:
         """
         use this method to delete and get current state of a key
-        
+
         return default if not found
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    def set_data(self, key: Union[str, int], data: Dict[Any, Any]) -> None:
+    def set_data(
+        self, key: Union[str, int], data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """
         use this method to set data for a key
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    def get_data(self, key: Union[str, int], default: Optional[Any] = None) -> Dict[Any, Any]:
+    def get_data(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Dict[Any, Any]:
         """
         use this method to get current data of a key
         """
         raise NotImplementedError
-    
-    def update_data(self, key: int, data: Dict[Any, Any]) -> None:
+
+    @abstractmethod
+    def update_data(
+        self, key: int, data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """
         use thid method to update current data of a key
         """
         raise NotImplementedError
-    
+
     @abstractmethod
-    def delete_data(self, key: Union[str, int], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    def delete_data(
+        self, key: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """
         use this method to clear and get current data of a key
         """

@@ -1,13 +1,9 @@
-from .functions import (
-    MetaStore as MetaStore,
-    change_root_store as change_root_store,
-    register_next_step as register_next_step,
-    unregister_steps as unregister_steps,
-    wait_for as wait_for,
-    clear as clear
-)
-from .dialects import (
-    aiogram_dialect as aiogram_dialect,
-    telebot_dialect as telebot_dialect,
-    telethon_dialect as telethon_dialect
-)
+from .dialects import aiogram_dialect as aiogram_dialect
+from .dialects import telebot_dialect as telebot_dialect
+from .dialects import telethon_dialect as telethon_dialect
+from .functions import MetaStore as MetaStore
+from .functions import change_root_store as change_root_store
+from .functions import clear as clear
+from .functions import register_next_step as register_next_step
+from .functions import unregister_steps as unregister_steps
+from .functions import wait_for as wait_for

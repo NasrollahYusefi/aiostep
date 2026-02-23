@@ -1,10 +1,11 @@
-from enum import Enum
-from typing import Callable, Any, Union, Optional, Dict
 from copy import deepcopy
-from cachebox import BaseCacheImpl, Cache
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Union
 
-from .base import BaseAsyncStorage
+from cachebox import BaseCacheImpl, Cache, TTLCache
+
 from ..storage.base import StateContext
+from .base import BaseAsyncStorage
 
 
 class AsyncMemoryStateStorage(BaseAsyncStorage):
@@ -19,13 +20,23 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
             an empty dictionary will be used.
     """
 
-    def __init__(self, cache: Optional[Union[BaseCacheImpl, dict]] = None) -> None:
+    def __init__(
+        self,
+        cache: Optional[Union[BaseCacheImpl, dict]] = None,
+        ex: Optional[float] = None,
+    ) -> None:
         """Initialize the memory storage.
 
         Args:
             cache (dict | None, optional): Initial cache dictionary. Defaults to None.
+            ex (float | None): expiry time for objects. pass in seconds.
         """
-        self.cache = cache if cache is not None else Cache(0)
+        if cache:
+            self.cache = cache
+        elif ex:
+            self.cache = TTLCache(0, ex)
+        else:
+            self.cache = Cache(0)
 
     def _get_key(self, user_id: Union[int, str]) -> str:
         """Generate Cache key for a user.
@@ -48,13 +59,13 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
             str: Cache key
         """
         return f"data:{user_id}"
-    
+
     async def set_state(
         self,
         user_id: Union[int, str],
         state: Union[str, Enum],
         callback: Optional[Callable[..., Any]] = None,
-        chat_id: Optional[Union[int, str]] = None
+        chat_id: Optional[Union[int, str]] = None,
     ) -> None:
         """Set the state for a user.
 
@@ -73,17 +84,17 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         state_key = self._get_key(user_id)
 
         self.cache[state_key] = StateContext(
-            current_state=state,
-            callback=callback,
-            chat_id=chat_id
+            current_state=state, callback=callback, chat_id=chat_id
         )
 
-    async def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def get_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -92,12 +103,14 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         state_key = self._get_key(user_id)
         return self.cache.get(state_key, default)
 
-    async def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    async def delete_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -106,7 +119,9 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         state_key = self._get_key(user_id)
         return self.cache.pop(state_key, default)
 
-    async def set_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+    async def set_data(
+        self, user_id: Union[int, str], data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """Set data for a user.
 
         This method completely replaces any existing data.
@@ -115,19 +130,30 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to store
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
 
-        self.cache[data_key] = deepcopy(data)
+        self.cache[data_key] = deepcopy(data_payload)
 
-    async def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def get_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Get data for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -138,7 +164,9 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         data_context = self.cache.get(data_key)
         return deepcopy(data_context) if data_context else default
 
-    async def update_data(self, user_id: Union[int, str], data: Dict[Any, Any]) -> None:
+    async def update_data(
+        self, user_id: Union[int, str], data: Optional[Dict[Any, Any]] = None, **kwargs
+    ) -> None:
         """Update data for a user.
 
         This method updates existing data with new values, similar to dict.update().
@@ -147,29 +175,40 @@ class AsyncMemoryStateStorage(BaseAsyncStorage):
         Args:
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to update
-        
+
         Example:
             >>> # Existing data: {"name": "John"}
             >>> await storage.update_data(user_id, {"age": 25})
             >>> # Result: {"name": "John", "age": 25}
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
 
         data_context: dict = self.cache.get(data_key)
         if data_context is None:
-            self.cache[data_key] = deepcopy(data)
+            self.cache[data_key] = deepcopy(data_payload)
         else:
-            data_context.update(deepcopy(data))
+            data_context.update(deepcopy(data_payload))
 
-    async def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    async def delete_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:

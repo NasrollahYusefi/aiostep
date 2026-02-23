@@ -1,12 +1,13 @@
-from msgspec import DecodeError
-from msgspec.json import Encoder, Decoder
-from copy import deepcopy
 from enum import Enum
-from typing import Callable, Union, Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
+
+from msgspec import DecodeError
+from msgspec.json import Decoder, Encoder
 
 try:
     from redis import Redis
     from redis.typing import ExpiryT
+
     redis_installed = True
 except ImportError:
     redis_installed = False
@@ -30,6 +31,7 @@ class RedisStateStorage(BaseStorage):
         cache (Redis): Redis client instance
         ex (ExpiryT | None): Optional expiration time for all keys
     """
+
     def __init__(
         self,
         redis: Optional["Redis"] = None,
@@ -38,13 +40,13 @@ class RedisStateStorage(BaseStorage):
         db: Optional[int] = 0,
         password: Optional[str] = None,
         ex: Optional["ExpiryT"] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """Initialize the Redis storage.
 
         Args:
             cache (Redis): Redis client instance
-            ex (ExpiryT | None, optional): Expiration time for all keys. 
+            ex (ExpiryT | None, optional): Expiration time for all keys.
                 Defaults to None.
         """
         if not redis_installed:
@@ -55,13 +57,7 @@ class RedisStateStorage(BaseStorage):
             )
 
         if not redis:
-            redis = Redis(
-                host=host,
-                port=port,
-                db=db,
-                password=password,
-                **kwargs
-            )
+            redis = Redis(host=host, port=port, db=db, password=password, **kwargs)
         self.cache = redis
         self.ex = ex
         self.encoder = Encoder()
@@ -90,12 +86,12 @@ class RedisStateStorage(BaseStorage):
         return f"data:{user_id}"
 
     def set_state(
-        self, 
-        user_id: Union[int, str], 
-        state: Union[str, Enum], 
-        callback: Optional[Callable[..., Any]] = None, 
+        self,
+        user_id: Union[int, str],
+        state: Union[str, Enum],
+        callback: Optional[Callable[..., Any]] = None,
         chat_id: Optional[Union[int, str]] = None,
-        ex: Optional["ExpiryT"] = None
+        ex: Optional["ExpiryT"] = None,
     ) -> None:
         """Set the state for a user.
 
@@ -116,21 +112,21 @@ class RedisStateStorage(BaseStorage):
         state_data = {
             "current_state": state,
             "chat_id": chat_id,
-            "callback": callback_name
+            "callback": callback_name,
         }
 
         self.cache.set(
-            self._get_key(user_id),
-            self.encoder.encode(state_data),
-            ex=ex or self.ex
+            self._get_key(user_id), self.encoder.encode(state_data), ex=ex or self.ex
         )
 
-    def get_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    def get_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Get the state context for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -143,12 +139,14 @@ class RedisStateStorage(BaseStorage):
         state_data = self.decoder.decode(data)
         return StateContext(**state_data)
 
-    def delete_state(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[StateContext]:
+    def delete_state(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[StateContext]:
         """Delete the state for a user.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if state doesn't exist. 
+            default (Any, optional): Default value if state doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -165,10 +163,11 @@ class RedisStateStorage(BaseStorage):
         return StateContext(**state_data)
 
     def set_data(
-        self, 
+        self,
         user_id: Union[int, str],
-        data: Dict[Any, Any],
-        ex: Optional["ExpiryT"] = None
+        data: Optional[Dict[Any, Any]] = None,
+        ex: Optional["ExpiryT"] = None,
+        **kwargs,
     ) -> None:
         """Set data for a user's state.
 
@@ -178,23 +177,30 @@ class RedisStateStorage(BaseStorage):
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to store
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
 
-        self.cache.set(
-            data_key,
-            self.encoder.encode(data),
-            ex=ex or self.ex
-        )
+        self.cache.set(data_key, self.encoder.encode(data_payload), ex=ex or self.ex)
 
-    def get_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    def get_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Get data for a user's state.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:
@@ -210,8 +216,9 @@ class RedisStateStorage(BaseStorage):
     def update_data(
         self,
         user_id: Union[int, str],
-        data: Dict[Any, Any],
-        ex: Optional["ExpiryT"] = None
+        data: Optional[Dict[Any, Any]] = None,
+        ex: Optional["ExpiryT"] = None,
+        **kwargs,
     ) -> None:
         """Update data for a user's state.
 
@@ -221,14 +228,23 @@ class RedisStateStorage(BaseStorage):
         Args:
             user_id (int | str): ID of the user
             data (dict[str, Any]): Data to update
-        
+
         Example:
             >>> # Existing data: {"name": "John"}
             >>> await storage.update_data(user_id, {"age": 25})
             >>> # Result: {"name": "John", "age": 25}
         """
-        if not isinstance(data, dict):
+        if data is not None and not isinstance(data, dict):
             raise ValueError(f"'data' must be a dict, got {type(data)}")
+
+        data_payload = {}
+        if data:
+            data_payload.update(data)
+        if kwargs:
+            data_payload.update(kwargs)
+
+        if not data_payload:
+            raise ValueError("No data passed.")
 
         data_key = self._get_data_key(user_id)
         current_data = self.cache.get(data_key)
@@ -236,24 +252,22 @@ class RedisStateStorage(BaseStorage):
         if current_data:
             try:
                 state_data = self.decoder.decode(current_data)
-                state_data.update(data)
+                state_data.update(data_payload)
             except DecodeError:
-                state_data = deepcopy(data)
+                state_data = data_payload
         else:
-            state_data = deepcopy(data)
+            state_data = data_payload
 
-        self.cache.set(
-            data_key,
-            self.encoder.encode(state_data),
-            ex=ex or self.ex
-        )
+        self.cache.set(data_key, self.encoder.encode(state_data), ex=ex or self.ex)
 
-    def delete_data(self, user_id: Union[int, str], default: Optional[Any] = None) -> Optional[Dict[Any, Any]]:
+    def delete_data(
+        self, user_id: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Dict[Any, Any]]:
         """Clear and get all data for a user's state.
 
         Args:
             user_id (int | str): ID of the user
-            default (Any, optional): Default value if data doesn't exist. 
+            default (Any, optional): Default value if data doesn't exist.
                 Defaults to None.
 
         Returns:
