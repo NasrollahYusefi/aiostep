@@ -1,12 +1,11 @@
+# Aiostep - Simple and Flexible State Management
+
 ![PyPI Version](https://img.shields.io/pypi/v/aiostep)
 ![Python Version](https://img.shields.io/pypi/pyversions/aiostep)
 ![License](https://img.shields.io/pypi/l/aiostep)
 ![Total Downloads](https://static.pepy.tech/badge/aiostep)
 ![Downloads](https://img.shields.io/pypi/dm/aiostep)
 [![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue?logo=telegram&style=flat-square)](https://t.me/aiostep_chat)
-
-
-# Aiostep - Simple and Flexible State Management
 
 Aiostep is a lightweight and flexible state management tool designed for Telegram bots and similar applications. It allows developers to track user states and manage transitions between them with ease. Whether you're building a multi-step form, handling complex user interactions, or simply need to store temporary user data, Aiostep makes it straightforward.
 
@@ -54,6 +53,7 @@ pip install --upgrade aiostep
 ```
 
 If you want use `RedisStateStorage`, you should install aiostep with redis support:
+
 ```bash
 pip install --upgrade aiostep[redis]
 ```
@@ -63,21 +63,26 @@ pip install --upgrade aiostep[redis]
 ## Usage
 
 ### Using `wait_for` and `register_next_step`
+
 **Aiostep offers two primary methods for managing direct user interactions:**
 
-#### 1. `wait_for`:
+#### 1. `wait_for`
+
 - This method allows you to wait for a user response directly within the current handler.
 - Requires the `Listen` middleware to be set up for intercepting subsequent user messages.
 
 **Example:**
+
 ```python
-from aiostep import Listen, wait_for
-from aiogram import Dispatcher
+from aiostep import aiogram_dialect, wait_for
+
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
 
 dp = Dispatcher()
-dp.message.outer_middleware(Listen())
+dp.message.outer_middleware(aiogram_dialect.Listen())
 
-@dp.message_handler(commands=["start"])
+@dp.message(filters.CommandStart())
 async def ask_question(message: Message):
     await message.reply("Please type something:")
     try:
@@ -87,17 +92,28 @@ async def ask_question(message: Message):
     else:
         await message.reply(f"You typed: {response.text}")
 ```
+
 > [!NOTE]\
 > The `timeout` parameter is optional; if not provided, the bot will wait indefinitely for a response.
 
 #### 2. `register_next_step`
+
 - Use this method to explicitly register the next handler for the user's response.
 - Also requires the `Listen` middleware for processing follow-up messages.
 
 **Example:**
 
 ```python
-@dp.message_handler(commands=["start"])
+import aiostep
+from aiostep import aiogram_dialect
+
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
+
+dp = Dispatcher()
+dp.message.outer_middleware(aiogram_dialect.Listen())
+
+@dp.message(filters.CommandStart())
 async def ask_question(message: Message):
     await aiostep.register_next_step(message.chat.id, handle_answer)
     await message.reply("What's your name?")
@@ -107,20 +123,26 @@ async def handle_answer(message: Message):
 ```
 
 ### Using States
+
 **Aiostep supports managing user states to handle multi-step workflows. Unlike the previous methods, managing states does not require the `Listen` middleware.**
 
+#### 1. Memory State Storage
 
-#### 1. Memory State Storage:
 - This is an in-memory implementation suitable for temporary state storage.
 
 **Example:**
 
 ```python
 from aiostep import MemoryStateStorage
+from aiostep.utils import IsState
 
+from aiogram import Dispatcher, filters
+from aiogram.types import Message
+
+dp = Dispatcher()
 state_manager = MemoryStateStorage()
 
-@dp.message_handler(commands=["start"])
+@dp.message(filters.CommandStart())
 async def start_process(message: Message):
     state_manager.set_state(
         user_id=message.from_user.id,
@@ -128,14 +150,20 @@ async def start_process(message: Message):
     )
     await message.reply("State set to STEP_ONE!")
 
-@dp.message_handler(lambda message: state_manager.get_state(message.from_user.id).current_state == "STEP_ONE")
+@dp.message(IsState("STEP_ONE", state_manager))
 async def handle_step_one(message: Message):
     await message.reply("You're in STEP_ONE.")
+    state_manager.delete_state(
+        user_id=message.from_user.id,
+    )
 ```
 
 **Returning to Previous State:**
+
 ```python
-@dp.message_handler(lambda message: message.text == "Back")
+from aiogram import F
+
+@dp.message(F.text == "Back")
 async def go_back(message: Message):
     step = state_manager.get_state(message.from_user.id)
     if step and step.callback:
@@ -143,12 +171,14 @@ async def go_back(message: Message):
     else:
         await message.reply("No previous state found.")
 ```
+
 > [!NOTE]\
 > You should manually use getattr to find and call the back step handler if you use `RedisStateStorage` or `FileStateStorage`, because callbacks are saved as strings (function name)
+>
 >```python
->@dp.message_handler(lambda message: message.text == "Back")
+>@dp.message(F.text == "Back")
 >async def go_back(message: Message):
->    step = await state_manager.get_state(message.from_user.id)
+>    step = state_manager.get_state(message.from_user.id)
 >    if step and step.callback:
 >        callback = getattr(step.callback)
 >        await callback(message)
@@ -156,12 +186,15 @@ async def go_back(message: Message):
 >        await message.reply("No previous state found.")
 >```
 
-#### 2. Other Storage Options:
+#### 2. Other Storage Options
+
 - File-based and Redis storage implementations are also available, providing similar functionality with persistent data storage.
 - Simply replace MemoryStateStorage with FileStateStorage or RedisStateStorage when initializing the state manager.
+
 > [!NOTE]\
 > Methods in `MemoryStateStorage`, `FileStateStorage` and `RedisStateStorage` are synchronous.
 > **If you want use asynchronous versions, use `aiostep.asyncio`:**
+>
 > ```python
 > from aiostep.asyncio import AsyncMemoryStateStorage
 > from aiostep.asyncio import AsyncFileStateStorage
@@ -185,7 +218,7 @@ Here's how you can set it up:
     storage = MemoryStateStorage(TTLCache(0, 200))  # Timeout is 200 seconds
     ```
 
-- **For `RedisStateStorage`** (using the `ex` argument for expiry time):
+- **For `RedisStateStorage` and `FileStateStorage`** (using the `ex` argument for expiry time):
 
     ```python
     from aiostep import RedisStateStorage
@@ -195,6 +228,7 @@ Here's how you can set it up:
     storage = RedisStateStorage(db=0, ex=200)  # Timeout (expiry) is 200 seconds
     storage = FileStateStorage("path.txt", ex=200)  # Same as RedisStateStorage
     ```
+
 In both cases, the state will automatically expire after the specified time, and the data will be removed from the storage.
 
 ---
@@ -214,7 +248,7 @@ state_manager.set_data(
 
 ```python
 data = state_manager.get_data(user_id=message.from_user.id)
-await message.reply(f"Your data: {data}")
+print(f"Data saved for {message.from_user.id} is: {data}")
 ```
 
 ---
@@ -225,7 +259,7 @@ await message.reply(f"Your data: {data}")
    - Callbacks can be any callable object, such as functions.
    - In `FileStateStorage` and `RedisStateStorage` they are stored as strings (e.g. function name).
 
-3. **Storage Flexibility**:
+2. **Storage Flexibility**:
    - The memory-based implementation is ideal for development and testing.
    - Persistent storage like Redis is recommended for production.
 
@@ -233,7 +267,7 @@ await message.reply(f"Your data: {data}")
 
 ## Future Plans
 
-- **Better Library Compatibility**: Enhanced support for other Telegram bot libraries such as `pyTelegramBotAPI` and `python-telegram-bot`, in addition to `aiogram`.
+- **Better Library Compatibility**: Enhanced support for other Telegram bot libraries such as `python-telegram-bot`, in addition to `aiogram`.
 - **Improved Documentation**: Detailed guides and best practices.
 
 ---
@@ -244,4 +278,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-For more information or to contribute, visit our [GitHub repository](#).
+For more information or to contribute, visit our [GitHub repository](https://github.com/NasrollahYusefi/aiostep).

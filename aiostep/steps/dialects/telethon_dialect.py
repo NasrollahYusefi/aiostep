@@ -27,7 +27,7 @@ def Listen(
     Example::
 
         app = TelegramClient()
-        aiostep.telethon_dialect.listen(app)
+        aiostep.telethon_dialect.Listen(app)
     """
     if not telethon_installed:
         raise ImportError(

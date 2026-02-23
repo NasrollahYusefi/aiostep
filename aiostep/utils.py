@@ -1,6 +1,7 @@
 from enum import Enum
 
-import aiostep
+from .asyncio import BaseAsyncStorage
+from .storage import BaseStorage
 from aiogram import types
 from aiogram.filters import Filter
 
@@ -14,7 +15,7 @@ class IsState(Filter):
 
     Args:
         state (str | Enum): The target state to match. If an `Enum` is provided, its `name` will be used.
-        state_manager (aiostep.asyncio.BaseAsyncStorage): 
+        state_manager (BaseStorage | BaseAsyncStorage): 
             An instance of aiostep's asynchronous state manager for retrieving and validating user states.
 
     Methods:
@@ -23,15 +24,22 @@ class IsState(Filter):
             - Returns (bool): True if the user's state matches the target state, False otherwise.
     """
 
-    def __init__(self, state: str | Enum, state_manager: aiostep.asyncio.BaseAsyncStorage) -> None:
+    def __init__(self, state: str | Enum, state_manager: BaseStorage | BaseAsyncStorage) -> None:
         self.state = state.name if isinstance(state, Enum) else state
         self.state_manager = state_manager
+        if isinstance(state_manager, BaseStorage):
+            self.sync = True
+        else:
+            self.sync = False
 
     async def __call__(
         self,
         event: types.Message | types.CallbackQuery
     ) -> bool:
-        current_state = await self.state_manager.get_state(event.from_user.id)
+        if self.sync:
+            current_state = self.state_manager.get_state(event.from_user.id)
+        else:
+            current_state = await self.state_manager.get_state(event.from_user.id)
         if not current_state:
             return False
 
