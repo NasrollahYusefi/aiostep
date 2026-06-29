@@ -38,7 +38,7 @@ Aiostep provides three primary methods for interacting with users and managing m
    - Allows registering the next handler explicitly for a user.
    - Useful for chaining steps in a process.
 
-3. **States**:
+3. **`States`**:
    - Define user states to manage stages in a multi-step workflow.
    - States can include optional callbacks for seamless navigation between steps.
 

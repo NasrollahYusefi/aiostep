@@ -3,3 +3,7 @@
 dist/
 poetry.lock
 test.py
+aiostep/__pycache__/
+aiostep/steps/__pycache__/
+aiostep/steps/dialects/__pycache__/
+aiostep/storage/__pycache__/
